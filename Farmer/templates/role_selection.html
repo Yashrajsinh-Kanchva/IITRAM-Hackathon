@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to KrishiConnect | Choose Your Role</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    body {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f0faf4 0%, #e8f5ee 60%, #fff9f5 100%);
+    }
+
+    .entry-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      width: 100%; padding: 2rem 1rem;
+    }
+
+    /* Logo */
+    .entry-logo {
+      display: flex; align-items: center; gap: .6rem;
+      font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 1.6rem;
+      color: var(--dark); margin-bottom: 2.5rem;
+    }
+    .entry-logo strong { color: var(--primary); }
+
+    /* Card */
+    .entry-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-md);
+      padding: 3rem 2.8rem;
+      max-width: 480px; width: 100%;
+      position: relative; overflow: hidden;
+      text-align: center;
+    }
+    .entry-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light), var(--accent));
+    }
+
+    .entry-hero-text {
+      margin-bottom: 2.5rem;
+    }
+    .entry-hero-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700; color: var(--dark);
+      margin-bottom: .6rem;
+    }
+    .entry-hero-text p { color: var(--mid); font-size: 1rem; line-height: 1.6; }
+
+    /* Role Buttons Container */
+    .role-buttons {
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    .role-btn {
+      display: flex; align-items: center; justify-content: center; gap: .8rem;
+      width: 100%; border-radius: var(--r-md);
+      font-family: 'DM Sans', sans-serif; font-size: 1.1rem; font-weight: 600;
+      padding: 1.2rem; cursor: pointer; text-decoration: none;
+      transition: all .2s ease;
+    }
+
+    /* Farmer Button */
+    .btn-farmer {
+      background: var(--primary); color: #fff;
+      border: 1px solid var(--primary);
+      box-shadow: 0 4px 16px rgba(45,106,79,.25);
+    }
+    .btn-farmer:hover { 
+      background: var(--primary-h); transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(45,106,79,.3);
+    }
+
+    /* Buyer Button */
+    .btn-buyer {
+      background: #fff; color: var(--dark);
+      border: 2px solid var(--border);
+    }
+    .btn-buyer:hover {
+      border-color: var(--accent); color: var(--accent-dark);
+      background: #fffafa; transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.04);
+    }
+
+    .entry-note {
+      color: var(--mid); font-size: .8rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="entry-wrap">
+
+    <!-- Logo -->
+    <div class="entry-logo">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#D8F3DC"/>
+        <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2-10 5" fill="#2D6A4F"/>
+      </svg>
+      Krishi<strong>Connect</strong>
+    </div>
+
+    <!-- Card -->
+    <div class="entry-card">
+      <div class="entry-hero-text">
+        <h1>Welcome to the Platform</h1>
+        <p>Are you looking to sell your crops, or buy fresh produce directly from farms?</p>
+      </div>
+
+      <div class="role-buttons">
+        <a href="/entry" class="role-btn btn-farmer">
+          <span style="font-size:1.4rem">🌾</span> I am a Farmer
+        </a>
+        
+        <a href="http://127.0.0.1:5001" class="role-btn btn-buyer">
+          <span style="font-size:1.4rem">🛒</span> I am a Buyer
+        </a>
+      </div>
+
+      <p class="entry-note">
+        Farm-to-Market Marketplace · Secure & Verified Flow
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
