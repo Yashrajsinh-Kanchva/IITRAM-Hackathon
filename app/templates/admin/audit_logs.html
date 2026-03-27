@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div>
+    <h2 class="text-2xl font-semibold">Audit Trail</h2>
+    <p class="mt-1 text-sm text-slate-600">Track every admin action with before/after details.</p>
+  </div>
+
+  <section class="rounded-xl bg-white p-4 shadow-sm">
+    <div class="grid gap-3 md:grid-cols-6">
+      <input id="filter-admin-email" type="text" placeholder="Admin email" class="rounded-lg border border-slate-300 px-3 py-2 md:col-span-2" />
+      <select id="filter-action-type" class="rounded-lg border border-slate-300 px-3 py-2">
+        <option value="">All actions</option>
+        <option value="admin_login">admin_login</option>
+        <option value="admin_logout">admin_logout</option>
+        <option value="user_status_updated">user_status_updated</option>
+        <option value="product_reviewed">product_reviewed</option>
+        <option value="order_status_updated">order_status_updated</option>
+        <option value="transaction_state_updated">transaction_state_updated</option>
+        <option value="user_bulk_action">user_bulk_action</option>
+        <option value="product_bulk_action">product_bulk_action</option>
+        <option value="alert_resolved">alert_resolved</option>
+      </select>
+      <input id="filter-date-from" type="date" class="rounded-lg border border-slate-300 px-3 py-2" />
+      <input id="filter-date-to" type="date" class="rounded-lg border border-slate-300 px-3 py-2" />
+      <button id="audit-apply-filters" class="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white">Apply</button>
+    </div>
+    <div class="mt-3 flex items-center gap-2">
+      <button id="audit-export-csv" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">Export CSV</button>
+      <p id="audit-summary" class="text-sm text-slate-500"></p>
+    </div>
+  </section>
+
+  <section class="rounded-xl bg-white p-4 shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100 text-left text-slate-600">
+          <tr>
+            <th class="px-3 py-2">Timestamp</th>
+            <th class="px-3 py-2">Admin</th>
+            <th class="px-3 py-2">Action</th>
+            <th class="px-3 py-2">Target</th>
+            <th class="px-3 py-2">Details</th>
+          </tr>
+        </thead>
+        <tbody id="audit-logs-body"></tbody>
+      </table>
+    </div>
+    <div id="audit-pagination" class="mt-4 flex items-center gap-2"></div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const auditState = { page: 1, logs: [] };
+
+  function getAuditFilters() {
+    return {
+      admin_email: document.getElementById('filter-admin-email').value.trim(),
+      action_type: document.getElementById('filter-action-type').value.trim(),
+      date_from: document.getElementById('filter-date-from').value.trim(),
+      date_to: document.getElementById('filter-date-to').value.trim(),
+    };
+  }
+
+  function diffRows(changes) {
+    const before = (changes && changes.before) || {};
+    const after = (changes && changes.after) || {};
+    const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)])).sort();
+    if (!keys.length) {
+      return '<p class="text-xs text-slate-500">No before/after diff recorded.</p>';
+    }
+
+    return `<div class="grid gap-3 md:grid-cols-2">
+      <div class="rounded-lg border border-slate-200 p-2">
+        <p class="mb-2 text-xs font-semibold text-slate-600">Before</p>
+        <div class="space-y-1">${keys.map((key) => {
+          const beforeValue = JSON.stringify(before[key]);
+          const afterValue = JSON.stringify(after[key]);
+          const changed = beforeValue !== afterValue;
+          return `<div class="rounded px-2 py-1 text-xs ${changed ? 'bg-amber-100' : 'bg-slate-50'}">
+            <span class="font-semibold">${AdminApp.escapeHtml(key)}:</span>
+            <span class="font-mono">${AdminApp.escapeHtml(beforeValue ?? 'null')}</span>
+          </div>`;
+        }).join('')}</div>
+      </div>
+      <div class="rounded-lg border border-slate-200 p-2">
+        <p class="mb-2 text-xs font-semibold text-slate-600">After</p>
+        <div class="space-y-1">${keys.map((key) => {
+          const beforeValue = JSON.stringify(before[key]);
+          const afterValue = JSON.stringify(after[key]);
+          const changed = beforeValue !== afterValue;
+          return `<div class="rounded px-2 py-1 text-xs ${changed ? 'bg-amber-100' : 'bg-slate-50'}">
+            <span class="font-semibold">${AdminApp.escapeHtml(key)}:</span>
+            <span class="font-mono">${AdminApp.escapeHtml(afterValue ?? 'null')}</span>
+          </div>`;
+        }).join('')}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderAuditTable() {
+    const body = document.getElementById('audit-logs-body');
+    const logs = auditState.logs || [];
+    if (!logs.length) {
+      body.innerHTML = '<tr><td colspan="5" class="px-3 py-3 text-center text-slate-500">No logs found</td></tr>';
+      return;
+    }
+
+    body.innerHTML = logs.map((item, index) => {
+      const detailsLabel = item.details && Object.keys(item.details).length ? 'View' : 'None';
+      return `<tr data-row-index="${index}" class="audit-row cursor-pointer border-b border-slate-100 hover:bg-slate-50">
+        <td class="px-3 py-2">${AdminApp.formatDate(item.created_at)}</td>
+        <td class="px-3 py-2">${AdminApp.escapeHtml(item.admin_email || '-')}</td>
+        <td class="px-3 py-2">${AdminApp.escapeHtml(item.action_type || '-')}</td>
+        <td class="px-3 py-2">${AdminApp.escapeHtml(item.target_collection || '-')} / ${AdminApp.escapeHtml(item.target_id || '-')}</td>
+        <td class="px-3 py-2 text-slate-600">${detailsLabel}</td>
+      </tr>
+      <tr data-detail-index="${index}" class="hidden border-b border-slate-200 bg-slate-50/70">
+        <td colspan="5" class="px-3 py-3">
+          <div class="mb-2 text-xs text-slate-600">IP: ${AdminApp.escapeHtml(item.ip_address || '-')}</div>
+          ${diffRows(item.changes)}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadAuditLogs(page = 1) {
+    auditState.page = page;
+    const params = new URLSearchParams({ page, per_page: 50 });
+    const filters = getAuditFilters();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+
+    try {
+      const data = await AdminApp.apiFetch(`/admin/api/audit-logs?${params.toString()}`);
+      auditState.logs = data.logs || [];
+      renderAuditTable();
+
+      const total = Number(data.total || 0);
+      const pageNo = Number(data.page || 1);
+      const pages = Number(data.pages || 0);
+      document.getElementById('audit-summary').textContent = `Total logs: ${total} | Page ${pageNo} of ${pages || 1}`;
+
+      AdminApp.renderPagination('audit-pagination', {
+        page: pageNo,
+        total_pages: pages,
+        has_prev: pageNo > 1,
+        has_next: pageNo < pages
+      }, loadAuditLogs);
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  function exportCurrentPageCsv() {
+    const rows = auditState.logs || [];
+    if (!rows.length) {
+      AdminApp.notify('No logs to export on this page.', 'info');
+      return;
+    }
+
+    const header = ['timestamp', 'admin_email', 'action_type', 'target_collection', 'target_id', 'ip_address', 'changes_before', 'changes_after'];
+    const csvLines = [header.join(',')];
+
+    rows.forEach((item) => {
+      const values = [
+        item.created_at || '',
+        item.admin_email || '',
+        item.action_type || '',
+        item.target_collection || '',
+        item.target_id || '',
+        item.ip_address || '',
+        JSON.stringify((item.changes && item.changes.before) || {}),
+        JSON.stringify((item.changes && item.changes.after) || {}),
+      ].map((value) => `"${String(value).replaceAll('"', '""')}"`);
+      csvLines.push(values.join(','));
+    });
+
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit_logs_page_${auditState.page}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('audit-apply-filters').addEventListener('click', () => loadAuditLogs(1));
+  document.getElementById('audit-export-csv').addEventListener('click', exportCurrentPageCsv);
+
+  document.getElementById('audit-logs-body').addEventListener('click', (event) => {
+    const row = event.target.closest('.audit-row');
+    if (!row) return;
+    const index = row.dataset.rowIndex;
+    const detail = document.querySelector(`tr[data-detail-index="${index}"]`);
+    if (!detail) return;
+    detail.classList.toggle('hidden');
+  });
+
+  loadAuditLogs();
+</script>
+{% endblock %}

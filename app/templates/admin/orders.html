@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div>
+    <h2 class="text-2xl font-semibold">Order Monitoring</h2>
+    <p class="mt-1 text-sm text-slate-600">Track orders and control lifecycle statuses.</p>
+  </div>
+
+  <section class="rounded-xl bg-white p-4 shadow-sm">
+    <div class="grid gap-3 md:grid-cols-3">
+      <input id="filter-order-search" type="text" placeholder="Order number or buyer" class="rounded-lg border border-slate-300 px-3 py-2" />
+      <select id="filter-order-status" class="rounded-lg border border-slate-300 px-3 py-2">
+        <option value="">All status</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="packed">Packed</option>
+        <option value="shipped">Shipped</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <button id="order-search-btn" class="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white">Apply Filters</button>
+    </div>
+  </section>
+
+  <section class="rounded-xl bg-white p-4 shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-[820px] text-sm">
+        <thead class="bg-slate-100 text-left text-slate-600">
+          <tr>
+            <th class="px-3 py-2">Order #</th>
+            <th class="px-3 py-2">Buyer</th>
+            <th class="px-3 py-2">Amount</th>
+            <th class="px-3 py-2 w-48">Status</th>
+            <th class="px-3 py-2 w-28">Action</th>
+          </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </div>
+    <div id="orders-pagination" class="mt-4 flex items-center gap-2"></div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const orderState = { page: 1 };
+
+  function orderFilters() {
+    return {
+      search: document.getElementById('filter-order-search').value,
+      status: document.getElementById('filter-order-status').value,
+    };
+  }
+
+  async function loadOrders(page = 1) {
+    orderState.page = page;
+    const params = new URLSearchParams({ page });
+    const filters = orderFilters();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+
+    try {
+      const data = await AdminApp.apiFetch(`/admin/api/orders?${params.toString()}`);
+      const body = document.getElementById('orders-body');
+      body.innerHTML = (data.items || []).map((item) => `
+        <tr class="border-b border-slate-100">
+          <td class="px-3 py-2">${AdminApp.escapeHtml(item.order_number || '-')}</td>
+          <td class="px-3 py-2">${AdminApp.escapeHtml(item.buyer_name || '-')}</td>
+          <td class="px-3 py-2">${AdminApp.formatCurrency(item.total_amount || 0)}</td>
+          <td class="px-3 py-2">
+            <select data-order-id="${item.id}" class="order-status w-full max-w-[10rem] rounded border border-slate-300 px-2 py-1">
+              ${['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'].map((status) => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </td>
+          <td class="px-3 py-2">
+            <button data-order-id="${item.id}" class="update-order whitespace-nowrap rounded bg-slate-900 px-3 py-1.5 text-white">Update</button>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="px-3 py-3 text-center text-slate-500">No orders found</td></tr>';
+
+      AdminApp.renderPagination('orders-pagination', data.pagination, loadOrders);
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  document.getElementById('order-search-btn').addEventListener('click', () => loadOrders(1));
+
+  document.getElementById('orders-body').addEventListener('click', async (event) => {
+    const button = event.target.closest('.update-order');
+    if (!button) return;
+    const orderId = button.dataset.orderId;
+    const status = document.querySelector(`.order-status[data-order-id="${orderId}"]`).value;
+
+    try {
+      await AdminApp.apiFetch(`/admin/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      AdminApp.notify('Order status updated', 'success');
+      loadOrders(orderState.page);
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  });
+
+  loadOrders();
+</script>
+{% endblock %}

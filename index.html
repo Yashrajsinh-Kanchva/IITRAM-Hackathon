@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FarmLink Marketplace UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top-nav" id="topNav">
+      <div class="brand-wrap">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M19 4c-6 1.2-10 5.8-11.1 11.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8.4 15.8c-3-.2-4.9-2.2-5.4-5.2 2.7-.8 5.2-.2 7 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M20.8 3.2c.7 5.6-1.3 10.2-6.2 13.2-2.3-2.5-2.9-5.4-1.6-8.6 1.4-3.2 4-4.8 7.8-4.6Z" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        <div class="brand-text">FarmLink</div>
+      </div>
+
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#marketplace">Marketplace</a>
+        <a href="#my-farm">My Farm</a>
+        <a href="#orders">Orders</a>
+        <a href="#analytics">Analytics</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M6 10a6 6 0 1 1 12 0v4l2 2H4l2-2v-4Z" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <div class="avatar-wrap">
+          <button class="avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false">
+            <span class="avatar-circle">FM</span>
+            <span class="avatar-name">Farm Manager</span>
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="m5 7 5 6 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="avatar-menu" id="avatarMenu" role="menu">
+            <button role="menuitem">Profile</button>
+            <button role="menuitem">Farm Settings</button>
+            <button role="menuitem">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="hero-banner reveal" id="my-farm">
+        <div class="hero-content">
+          <p class="hero-kicker">Direct Farm Commerce</p>
+          <h1>Grow Better. Sell Smarter. Trade Fair.</h1>
+          <p class="hero-sub">
+            Track your produce, monitor logistics, and close better deals with restaurants and stores in one modern marketplace.
+          </p>
+        </div>
+
+        <div class="stats-row" id="statsRow">
+          <article class="stat-card glass">
+            <span>Total Listings</span>
+            <strong data-counter="totalListings">0</strong>
+          </article>
+          <article class="stat-card glass">
+            <span>Active Orders</span>
+            <strong data-counter="activeOrders">0</strong>
+          </article>
+          <article class="stat-card glass">
+            <span>Farmers Online</span>
+            <strong data-counter="farmersOnline">0</strong>
+          </article>
+          <article class="stat-card glass">
+            <span>Today's Trades</span>
+            <strong data-counter="todayTrades">0</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-head reveal" id="marketplace">
+        <div>
+          <h2>Fresh Market Listings</h2>
+          <p>Live product feed from connected farms and producer groups.</p>
+        </div>
+        <div class="head-actions">
+          <label class="input-wrap">
+            <span>Search</span>
+            <input type="text" id="searchInput" placeholder="Search by product name..." />
+          </label>
+          <button class="btn secondary" id="refreshProductsBtn">Refresh Feed</button>
+        </div>
+      </section>
+
+      <section class="product-grid" id="productGrid" aria-live="polite"></section>
+
+      <section class="section-head reveal" id="orders">
+        <div>
+          <h2>Orders & Logistics</h2>
+          <p>From placement to delivery with status progression and cold chain visibility.</p>
+        </div>
+      </section>
+
+      <section class="orders-list" id="ordersList" aria-live="polite"></section>
+
+      <section class="section-head reveal" id="analytics">
+        <div>
+          <h2>Market Analytics</h2>
+          <p>Sales and order momentum over the latest 30-day window.</p>
+        </div>
+      </section>
+
+      <section class="analytics-grid reveal">
+        <article class="surface-card">
+          <header>
+            <h3>Trade Value Trend</h3>
+            <span class="badge verified">Verified</span>
+          </header>
+          <canvas id="salesChart" height="180"></canvas>
+        </article>
+        <article class="surface-card">
+          <header>
+            <h3>Order Flow Trend</h3>
+            <span class="badge organic">Organic</span>
+          </header>
+          <canvas id="ordersChart" height="180"></canvas>
+        </article>
+      </section>
+    </main>
+
+    <aside class="drawer" id="negotiationDrawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div>
+          <p class="drawer-kicker">Bargaining Window</p>
+          <h3 id="drawerProductName">Negotiation Panel</h3>
+        </div>
+        <button class="icon-btn" id="closeDrawerBtn" aria-label="Close negotiation drawer">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="drawer-summary" id="drawerSummary"></div>
+
+      <div class="drawer-inputs">
+        <label>
+          <span>Current Asking Price</span>
+          <input type="text" id="askingPriceInput" readonly />
+        </label>
+        <label>
+          <span>Counter Offer</span>
+          <input type="number" id="counterOfferInput" placeholder="Enter your offer" />
+        </label>
+      </div>
+
+      <div class="chat-thread" id="chatThread"></div>
+
+      <div class="drawer-actions">
+        <button class="btn secondary" id="declineOfferBtn">Decline</button>
+        <button class="btn secondary" id="counterOfferBtn">Counter</button>
+        <button class="btn primary" id="acceptOfferBtn">Accept</button>
+      </div>
+    </aside>
+
+    <div class="modal-overlay" id="paymentModal" aria-hidden="true">
+      <div class="payment-modal">
+        <button class="icon-btn modal-close" id="closePaymentModalBtn" aria-label="Close payment modal">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+          </svg>
+        </button>
+
+        <h3>Complete Payment</h3>
+        <p class="modal-sub">Confirm order amount and payment method.</p>
+
+        <div class="summary-box" id="paymentSummary"></div>
+
+        <div class="payment-methods">
+          <label><input type="radio" name="paymentMethod" value="upi" checked /> UPI</label>
+          <label><input type="radio" name="paymentMethod" value="card" /> Card</label>
+          <label><input type="radio" name="paymentMethod" value="netbanking" /> Net Banking</label>
+        </div>
+
+        <div class="escrow-badge" id="escrowBadge">Held in Escrow</div>
+
+        <button class="btn primary full" id="confirmPaymentBtn">Pay Now</button>
+
+        <div class="success-check" id="successCheck" aria-hidden="true">
+          <svg viewBox="0 0 72 72" fill="none">
+            <circle cx="36" cy="36" r="34" />
+            <path d="m22 37 9 9 20-20" />
+          </svg>
+          <p>Payment successful</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <nav class="bottom-nav" aria-label="Mobile navigation">
+      <a href="#marketplace">Marketplace</a>
+      <a href="#my-farm">My Farm</a>
+      <a href="#orders">Orders</a>
+      <a href="#analytics">Analytics</a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

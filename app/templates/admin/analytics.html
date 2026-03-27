@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-semibold">Analytics</h2>
+      <p class="mt-1 text-sm text-slate-600">Orders, GMV trend, category activity, and user growth.</p>
+    </div>
+    <select id="analytics-range" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+      <option value="7d">Last 7 days</option>
+      <option value="30d" selected>Last 30 days</option>
+      <option value="90d">Last 90 days</option>
+    </select>
+  </div>
+
+  <section class="grid gap-4 lg:grid-cols-2">
+    <div class="rounded-xl bg-white p-4 shadow-sm">
+      <h3 class="text-base font-semibold">GMV Trend</h3>
+      <div id="sales-chart" class="chart-grid mt-4"></div>
+    </div>
+    <div class="rounded-xl bg-white p-4 shadow-sm">
+      <h3 class="text-base font-semibold">Order Trend</h3>
+      <div id="orders-chart" class="chart-grid mt-4"></div>
+    </div>
+  </section>
+
+  <section class="grid gap-4 lg:grid-cols-2">
+    <div class="rounded-xl bg-white p-4 shadow-sm">
+      <h3 class="text-base font-semibold">User Growth</h3>
+      <div id="users-chart" class="chart-grid mt-4"></div>
+    </div>
+    <div class="rounded-xl bg-white p-4 shadow-sm">
+      <h3 class="text-base font-semibold">Category Activity</h3>
+      <div class="overflow-x-auto">
+        <table class="mt-4 min-w-full text-sm">
+          <thead class="bg-slate-100 text-left text-slate-600">
+            <tr><th class="px-3 py-2">Category</th><th class="px-3 py-2">Count</th></tr>
+          </thead>
+          <tbody id="category-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function loadAnalytics(rangeKey) {
+    try {
+      const [sales, orders, overview] = await Promise.all([
+        AdminApp.apiFetch(`/admin/api/analytics/sales?range=${rangeKey}`),
+        AdminApp.apiFetch(`/admin/api/analytics/orders?range=${rangeKey}`),
+        AdminApp.apiFetch(`/admin/api/analytics/overview?range=${rangeKey}`)
+      ]);
+
+      AdminApp.renderBarChart('sales-chart', sales.series || [], (v) => AdminApp.formatCurrency(v));
+      AdminApp.renderBarChart('orders-chart', orders.series || [], (v) => v.toString());
+      AdminApp.renderBarChart('users-chart', overview.user_growth || [], (v) => v.toString());
+
+      const body = document.getElementById('category-body');
+      body.innerHTML = (overview.category_activity || []).map((item) => `
+        <tr class="border-b border-slate-100">
+          <td class="px-3 py-2">${AdminApp.escapeHtml(item.category)}</td>
+          <td class="px-3 py-2">${item.count}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="2" class="px-3 py-3 text-center text-slate-500">No category data</td></tr>';
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  const rangeSelect = document.getElementById('analytics-range');
+  rangeSelect.addEventListener('change', () => loadAnalytics(rangeSelect.value));
+  loadAnalytics(rangeSelect.value);
+</script>
+{% endblock %}

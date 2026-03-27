@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div>
+    <h2 class="text-2xl font-semibold">Dashboard Overview</h2>
+    <p class="mt-1 text-sm text-slate-600">Marketplace operations and risk metrics.</p>
+  </div>
+
+  <section id="anomaly-strip" class="space-y-3">
+    <div id="anomaly-empty" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+      No active anomalies detected.
+    </div>
+    <div id="anomaly-list" class="space-y-2"></div>
+  </section>
+
+  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-xs text-slate-500">Users</p><p id="kpi-users" class="mt-2 text-2xl font-semibold">0</p></div>
+    <div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-xs text-slate-500">Products</p><p id="kpi-products" class="mt-2 text-2xl font-semibold">0</p></div>
+    <div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-xs text-slate-500">Orders</p><p id="kpi-orders" class="mt-2 text-2xl font-semibold">0</p></div>
+    <div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-xs text-slate-500">Revenue Proxy</p><p id="kpi-revenue" class="mt-2 text-2xl font-semibold">₹0</p></div>
+    <div class="rounded-xl bg-white p-4 shadow-sm"><p class="text-xs text-slate-500">Failed Txns</p><p id="kpi-failed" class="mt-2 text-2xl font-semibold">0</p></div>
+  </section>
+
+  <section class="rounded-xl bg-white p-4 shadow-sm">
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="text-lg font-semibold">Recent Admin Activity</h3>
+      <button id="refresh-dashboard" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm">Refresh</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100 text-left text-slate-600">
+          <tr>
+            <th class="px-3 py-2">Action</th>
+            <th class="px-3 py-2">Entity</th>
+            <th class="px-3 py-2">Admin</th>
+            <th class="px-3 py-2">Time</th>
+          </tr>
+        </thead>
+        <tbody id="activity-body"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let alertRefreshHandle = null;
+
+  function alertIcon(severity) {
+    if (severity === 'critical') {
+      return '<svg class="h-4 w-4 text-rose-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l5.58 9.92c.75 1.334-.213 2.981-1.742 2.981H4.42c-1.53 0-2.492-1.647-1.743-2.98l5.58-9.92ZM11 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1-7a1 1 0 0 0-1 1v3a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1Z" clip-rule="evenodd"/></svg>';
+    }
+    return '<svg class="h-4 w-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0Zm-8-4a1 1 0 0 0-.993.883L9 7v3a1 1 0 0 0 1.993.117L11 10V7a1 1 0 0 0-1-1Zm0 7a1.25 1.25 0 1 0 0-2.5A1.25 1.25 0 0 0 10 13Z" clip-rule="evenodd"/></svg>';
+  }
+
+  function updateAlertCountBadge(count) {
+    const badge = document.getElementById('dashboard-alert-count');
+    if (!badge) return;
+    if (!count) {
+      badge.classList.add('hidden');
+      badge.textContent = '0';
+      return;
+    }
+    badge.textContent = String(count);
+    badge.classList.remove('hidden');
+  }
+
+  async function resolveAlert(alertId, node) {
+    try {
+      await AdminApp.apiFetch(`/admin/api/alerts/${alertId}/resolve`, { method: 'PATCH' });
+      node.classList.add('opacity-0', '-translate-x-2');
+      setTimeout(() => {
+        node.remove();
+        const count = document.querySelectorAll('.anomaly-alert').length;
+        document.getElementById('anomaly-empty').classList.toggle('hidden', count !== 0);
+        updateAlertCountBadge(count);
+      }, 220);
+      AdminApp.notify('Alert resolved.', 'success');
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  function renderAlerts(items) {
+    const list = document.getElementById('anomaly-list');
+    const empty = document.getElementById('anomaly-empty');
+    updateAlertCountBadge(items.length);
+
+    if (!items.length) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    list.innerHTML = items.map((alert) => {
+      const border = alert.severity === 'critical' ? 'border-rose-500 bg-rose-50' : 'border-amber-500 bg-amber-50';
+      const showResolve = alert.type !== 'payment_failure_rate';
+      return `<article data-alert-id="${alert.id}" class="anomaly-alert transform rounded-lg border-l-4 ${border} p-3 transition-all duration-200 ease-out">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-start gap-2">
+            ${alertIcon(alert.severity)}
+            <div>
+              <p class="text-sm font-medium text-slate-800">${AdminApp.escapeHtml(alert.message || '-')}</p>
+              <p class="mt-1 text-xs text-slate-600">Triggered: ${AdminApp.formatDate(alert.triggered_at)}</p>
+            </div>
+          </div>
+          ${showResolve
+            ? '<button class="resolve-alert rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Resolve</button>'
+            : '<span class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">Auto-monitored</span>'
+          }
+        </div>
+      </article>`;
+    }).join('');
+
+    list.querySelectorAll('.resolve-alert').forEach((button) => {
+      button.addEventListener('click', () => {
+        const card = button.closest('.anomaly-alert');
+        const alertId = card?.dataset.alertId;
+        if (!alertId || !card) return;
+        resolveAlert(alertId, card);
+      });
+    });
+  }
+
+  async function loadAlerts() {
+    try {
+      const response = await AdminApp.apiFetch('/admin/api/alerts');
+      renderAlerts(response.items || []);
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  async function loadDashboard() {
+    try {
+      const response = await AdminApp.apiFetch('/admin/api/dashboard/kpis');
+      const kpis = response.kpis || {};
+      document.getElementById('kpi-users').textContent = kpis.total_users ?? 0;
+      document.getElementById('kpi-products').textContent = kpis.total_products ?? 0;
+      document.getElementById('kpi-orders').textContent = kpis.total_orders ?? 0;
+      document.getElementById('kpi-revenue').textContent = AdminApp.formatCurrency(kpis.revenue_proxy ?? 0);
+      document.getElementById('kpi-failed').textContent = kpis.failed_transactions ?? 0;
+
+      const body = document.getElementById('activity-body');
+      const rows = (response.recent_activity || []).map((item) => {
+        return `<tr class="border-b border-slate-100">
+          <td class="px-3 py-2">${AdminApp.escapeHtml(item.action || '-')}</td>
+          <td class="px-3 py-2">${AdminApp.escapeHtml(item.entity_type || '-')}</td>
+          <td class="px-3 py-2">${AdminApp.escapeHtml(item.admin_id || '-')}</td>
+          <td class="px-3 py-2">${AdminApp.formatDate(item.created_at)}</td>
+        </tr>`;
+      }).join('');
+      body.innerHTML = rows || '<tr><td colspan="4" class="px-3 py-3 text-center text-slate-500">No activity yet</td></tr>';
+      await loadAlerts();
+    } catch (error) {
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  document.getElementById('refresh-dashboard').addEventListener('click', loadDashboard);
+  alertRefreshHandle = window.setInterval(loadAlerts, 60000);
+  loadDashboard();
+</script>
+{% endblock %}
