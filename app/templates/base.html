@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Admin Panel{% endblock %} | Farm-to-Market</title>
   <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind = {
       config: {
@@ -27,15 +30,16 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
+<body class="min-h-screen bg-slate-100 text-slate-900 admin-typography">
   {% if current_admin %}
-  <div class="min-h-screen lg:flex">
-    <aside class="w-full border-b border-slate-200 bg-slate-900 px-6 py-5 text-slate-200 lg:w-72 lg:border-r lg:border-b-0">
+  <div id="admin-shell" class="min-h-screen lg:flex admin-shell">
+    <div id="sidebar-edge-trigger" class="fixed inset-y-0 left-0 z-40 hidden w-14 lg:block" aria-hidden="true"></div>
+    <aside id="admin-sidebar" class="w-full border-b border-slate-200 bg-slate-900 px-6 py-5 text-slate-200 lg:w-72 lg:border-r lg:border-b-0 admin-sidebar">
       <div class="mb-8">
-        <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Farm-to-Market</p>
-        <h1 class="mt-2 text-xl font-semibold">Admin Control</h1>
+        <p class="text-sm uppercase tracking-[0.18em] text-slate-400">Farm-to-Market</p>
+        <h1 class="mt-2 text-2xl font-semibold">Admin Control</h1>
       </div>
-      <nav class="space-y-2">
+      <nav class="space-y-2 admin-nav">
         {% set links = [
           ('dashboard', 'Dashboard', url_for('admin.dashboard')),
           ('users', 'Users', url_for('admin.users_page')),
@@ -46,32 +50,32 @@
           ('audit_logs', 'Audit Logs', url_for('admin.audit_logs_page'))
         ] %}
         {% for key, label, href in links %}
-          <a href="{{ href }}" class="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium {% if active_page == key %}bg-brand-600 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+          <a href="{{ href }}" class="admin-nav-link flex items-center justify-between rounded-lg px-3 py-2.5 text-base font-medium {% if active_page == key %}bg-brand-600 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
             <span>{{ label }}</span>
             {% if key == 'dashboard' %}
-              <span id="dashboard-alert-count" class="hidden rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">0</span>
+              <span id="dashboard-alert-count" class="hidden rounded-full bg-rose-500 px-2 py-0.5 text-sm font-semibold text-white">0</span>
             {% endif %}
           </a>
         {% endfor %}
       </nav>
       <div class="mt-10 border-t border-slate-700 pt-5">
-        <p class="text-xs text-slate-400">Signed in as</p>
-        <p class="truncate text-sm">{{ current_admin.email }}</p>
+        <p class="text-sm text-slate-400">Signed in as</p>
+        <p class="truncate text-base">{{ current_admin.email }}</p>
         <form method="post" action="{{ url_for('admin.logout') }}" class="mt-3">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="w-full rounded-lg border border-slate-500 px-3 py-2 text-sm hover:bg-slate-800">
+          <button type="submit" class="w-full rounded-lg border border-slate-500 px-3 py-2 text-base hover:bg-slate-800">
             Logout
           </button>
         </form>
       </div>
     </aside>
 
-    <main class="flex-1 p-4 md:p-8">
+    <main id="admin-main" class="flex-1 p-5 md:p-8 admin-main">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="mb-4 space-y-2">
             {% for category, message in messages %}
-              <div class="rounded-lg px-4 py-3 text-sm {% if category == 'success' %}bg-emerald-100 text-emerald-900{% elif category == 'error' %}bg-rose-100 text-rose-900{% else %}bg-slate-200 text-slate-900{% endif %}">
+              <div class="rounded-lg px-4 py-3 text-base {% if category == 'success' %}bg-emerald-100 text-emerald-900{% elif category == 'error' %}bg-rose-100 text-rose-900{% else %}bg-slate-200 text-slate-900{% endif %}">
                 {{ message }}
               </div>
             {% endfor %}
@@ -102,6 +106,99 @@
   {% endif %}
 
   <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+  {% if current_admin %}
+  <script>
+    (function () {
+      const shell = document.getElementById('admin-shell');
+      const sidebar = document.getElementById('admin-sidebar');
+      const edge = document.getElementById('sidebar-edge-trigger');
+      if (!shell || !sidebar || !edge) return;
+
+      const desktopQuery = window.matchMedia('(min-width: 1024px)');
+      const OPEN_ZONE = 72;
+      const HOLD_ZONE = 360;
+      const HIDE_DELAY_MS = 360;
+      let hideTimer = null;
+      let isSidebarHover = false;
+      let isEdgeHover = false;
+      let latestMouseX = 0;
+      let rafId = null;
+
+      const showSidebar = () => {
+        if (!desktopQuery.matches) return;
+        shell.classList.add('sidebar-visible');
+      };
+
+      const hideSidebar = () => {
+        if (!desktopQuery.matches) return;
+        shell.classList.remove('sidebar-visible');
+      };
+
+      const delayedHide = () => {
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(() => {
+          if (!isSidebarHover && !isEdgeHover && latestMouseX > HOLD_ZONE) {
+            hideSidebar();
+          }
+        }, HIDE_DELAY_MS);
+      };
+
+      const processMouseMove = () => {
+        rafId = null;
+        if (!desktopQuery.matches) return;
+        if (latestMouseX <= OPEN_ZONE) {
+          showSidebar();
+          window.clearTimeout(hideTimer);
+          return;
+        }
+        if (!isSidebarHover && !isEdgeHover && latestMouseX > HOLD_ZONE) {
+          delayedHide();
+        }
+      };
+
+      const handleMouseMove = (event) => {
+        if (!desktopQuery.matches) return;
+        latestMouseX = event.clientX;
+        if (!rafId) {
+          rafId = window.requestAnimationFrame(processMouseMove);
+        }
+      };
+
+      edge.addEventListener('mouseenter', () => {
+        isEdgeHover = true;
+        showSidebar();
+        window.clearTimeout(hideTimer);
+      });
+      edge.addEventListener('mouseleave', () => {
+        isEdgeHover = false;
+        delayedHide();
+      });
+
+      sidebar.addEventListener('mouseenter', () => {
+        isSidebarHover = true;
+        showSidebar();
+        window.clearTimeout(hideTimer);
+      });
+      sidebar.addEventListener('mouseleave', () => {
+        isSidebarHover = false;
+        delayedHide();
+      });
+
+      document.addEventListener('mousemove', handleMouseMove);
+
+      desktopQuery.addEventListener('change', () => {
+        window.clearTimeout(hideTimer);
+        if (rafId) {
+          window.cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        if (!desktopQuery.matches) {
+          shell.classList.remove('sidebar-visible');
+        }
+      });
+    })();
+  </script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

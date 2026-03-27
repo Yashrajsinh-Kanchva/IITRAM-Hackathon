@@ -27,14 +27,21 @@
 
   <section class="rounded-xl bg-white p-4 shadow-sm">
     <div class="overflow-x-auto">
-      <table class="min-w-[820px] text-sm">
+      <table class="w-full min-w-full table-fixed text-sm">
+        <colgroup>
+          <col class="w-[28%]" />
+          <col class="w-[20%]" />
+          <col class="w-[14%]" />
+          <col class="w-[22%]" />
+          <col class="w-[16%]" />
+        </colgroup>
         <thead class="bg-slate-100 text-left text-slate-600">
           <tr>
             <th class="px-3 py-2">Order #</th>
             <th class="px-3 py-2">Buyer</th>
             <th class="px-3 py-2">Amount</th>
-            <th class="px-3 py-2 w-48">Status</th>
-            <th class="px-3 py-2 w-28">Action</th>
+            <th class="px-3 py-2">Status</th>
+            <th class="px-3 py-2">Action</th>
           </tr>
         </thead>
         <tbody id="orders-body"></tbody>
@@ -69,16 +76,16 @@
       const body = document.getElementById('orders-body');
       body.innerHTML = (data.items || []).map((item) => `
         <tr class="border-b border-slate-100">
-          <td class="px-3 py-2">${AdminApp.escapeHtml(item.order_number || '-')}</td>
-          <td class="px-3 py-2">${AdminApp.escapeHtml(item.buyer_name || '-')}</td>
-          <td class="px-3 py-2">${AdminApp.formatCurrency(item.total_amount || 0)}</td>
+          <td class="truncate px-3 py-2">${AdminApp.escapeHtml(item.order_number || '-')}</td>
+          <td class="truncate px-3 py-2">${AdminApp.escapeHtml(item.buyer_name || '-')}</td>
+          <td class="truncate px-3 py-2">${AdminApp.formatCurrency(item.total_amount || 0)}</td>
           <td class="px-3 py-2">
-            <select data-order-id="${item.id}" class="order-status w-full max-w-[10rem] rounded border border-slate-300 px-2 py-1">
+            <select data-order-id="${item.id}" class="order-status w-full rounded border border-slate-300 px-2 py-1">
               ${['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'].map((status) => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${status}</option>`).join('')}
             </select>
           </td>
           <td class="px-3 py-2">
-            <button data-order-id="${item.id}" class="update-order whitespace-nowrap rounded bg-slate-900 px-3 py-1.5 text-white">Update</button>
+            <button data-order-id="${item.id}" class="update-order w-full whitespace-nowrap rounded bg-slate-900 px-3 py-1.5 text-white">Update</button>
           </td>
         </tr>
       `).join('') || '<tr><td colspan="5" class="px-3 py-3 text-center text-slate-500">No orders found</td></tr>';

@@ -162,6 +162,7 @@ def _build_demo_orders_and_transactions(count, buyers):
         buyer = random.choice(buyers) if buyers else {"name": f"Buyer {i+1}", "email": f"buyer{i+1}@demo.local"}
         status = _weighted_order_status()
         total_amount = random.randint(1200, 25000)
+        quantity = random.randint(5, 120)
         order_number = f"ORD-{created_at.strftime('%Y%m%d')}-{1000 + i}"
 
         orders.append(
@@ -170,6 +171,8 @@ def _build_demo_orders_and_transactions(count, buyers):
                 "buyer_name": buyer.get("name"),
                 "buyer_email": buyer.get("email"),
                 "status": status,
+                "quantity": quantity,
+                "total_price": total_amount,
                 "total_amount": total_amount,
                 "delivery_address": random.choice(
                     [
@@ -358,3 +361,53 @@ def register_commands(app):
         click.echo(f"- orders: {len(orders)}")
         click.echo(f"- transactions: {len(transactions)}")
         click.echo(f"- activity logs: {len(logs)}")
+
+    @app.cli.command("seed-3d-data")
+    @click.option("--count", default=140, show_default=True, type=int)
+    @click.option("--days", default=30, show_default=True, type=int)
+    @click.option(
+        "--reset-only-3d",
+        is_flag=True,
+        default=False,
+        help="Remove only synthetic 3D demo orders before insert.",
+    )
+    def seed_3d_data(count, days, reset_only_3d):
+        """Seed synthetic orders with quantity/total_price for 3D analytics chart."""
+        db = current_app.db
+        now = utcnow()
+        buyers = list(db.users.find({"role": "buyer"}))
+        if not buyers:
+            click.echo("No buyers found. Seed users first (seed-demo-data).")
+            return
+
+        if reset_only_3d:
+            db.orders.delete_many({"order_number": {"$regex": r"^ORD-3D-"}})
+
+        rows = []
+        for idx in range(max(count, 1)):
+            buyer = random.choice(buyers)
+            created_at = now - timedelta(
+                days=random.randint(0, max(days - 1, 0)),
+                minutes=random.randint(0, 23 * 60 + 59),
+            )
+            quantity = random.randint(1, 160)
+            unit_price = random.randint(120, 900)
+            total_price = quantity * unit_price
+
+            rows.append(
+                {
+                    "order_number": f"ORD-3D-{created_at.strftime('%Y%m%d')}-{10000 + idx}",
+                    "buyer_name": buyer.get("name"),
+                    "buyer_email": buyer.get("email"),
+                    "status": random.choice(["confirmed", "packed", "shipped", "delivered"]),
+                    "quantity": quantity,
+                    "total_price": total_price,
+                    "total_amount": total_price,
+                    "created_at": created_at,
+                    "updated_at": created_at + timedelta(hours=random.randint(1, 48)),
+                }
+            )
+
+        if rows:
+            db.orders.insert_many(rows)
+        click.echo(f"Seeded {len(rows)} 3D analytics order rows.")

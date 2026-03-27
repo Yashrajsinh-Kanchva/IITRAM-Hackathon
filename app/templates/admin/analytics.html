@@ -16,24 +16,40 @@
     </select>
   </div>
 
+  <section class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <p class="text-xs text-slate-500">Total GMV</p>
+      <p id="analytics-kpi-gmv" class="mt-1 text-xl font-semibold text-slate-900">₹0</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <p class="text-xs text-slate-500">Total Orders</p>
+      <p id="analytics-kpi-orders" class="mt-1 text-xl font-semibold text-slate-900">0</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <p class="text-xs text-slate-500">Avg Daily Orders</p>
+      <p id="analytics-kpi-avg-orders" class="mt-1 text-xl font-semibold text-slate-900">0</p>
+    </div>
+  </section>
+
   <section class="grid gap-4 lg:grid-cols-2">
     <div class="rounded-xl bg-white p-4 shadow-sm">
       <h3 class="text-base font-semibold">GMV Trend</h3>
-      <div id="sales-chart" class="chart-grid mt-4"></div>
+      <div id="sales-chart" class="chart-grid mt-4 h-[330px] w-full overflow-hidden"></div>
     </div>
     <div class="rounded-xl bg-white p-4 shadow-sm">
       <h3 class="text-base font-semibold">Order Trend</h3>
-      <div id="orders-chart" class="chart-grid mt-4"></div>
+      <div id="orders-chart" class="chart-grid mt-4 h-[330px] w-full overflow-hidden"></div>
     </div>
   </section>
 
   <section class="grid gap-4 lg:grid-cols-2">
     <div class="rounded-xl bg-white p-4 shadow-sm">
       <h3 class="text-base font-semibold">User Growth</h3>
-      <div id="users-chart" class="chart-grid mt-4"></div>
+      <div id="users-chart" class="chart-grid mt-4 h-[330px] w-full overflow-hidden"></div>
     </div>
     <div class="rounded-xl bg-white p-4 shadow-sm">
       <h3 class="text-base font-semibold">Category Activity</h3>
+      <div id="category-chart" class="chart-grid mt-4 h-[280px] w-full overflow-hidden"></div>
       <div class="overflow-x-auto">
         <table class="mt-4 min-w-full text-sm">
           <thead class="bg-slate-100 text-left text-slate-600">
@@ -44,11 +60,234 @@
       </div>
     </div>
   </section>
+
+  <section id="chart-3d-panel" class="rounded-xl bg-white p-4 shadow-sm">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h3 class="text-base font-semibold">3D Order Analytics</h3>
+        <p class="mt-1 text-sm text-slate-600">Time vs Price vs Quantity (interactive).</p>
+      </div>
+      <button
+        id="chart-3d-fullscreen"
+        type="button"
+        class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
+      >
+        Fullscreen
+      </button>
+    </div>
+    <div id="3d-chart" class="mt-4 h-[420px] w-full"></div>
+  </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
+  const THEME = {
+    primary: 'rgba(47,125,74,1)',         // brand-600
+    primaryDark: 'rgba(37,99,59,1)',      // brand-700
+    mint: 'rgba(111,214,152,1)',
+    earth: 'rgba(163,122,74,1)',
+    amber: 'rgba(201,138,38,1)',
+    slate: '#64748b',
+    grid: 'rgba(148,163,184,0.2)'
+  };
+
+  function plotlyConfig() {
+    return {
+      responsive: true,
+      displaylogo: false,
+      displayModeBar: false
+    };
+  }
+
+  function renderLineChart(containerId, series, title, yLabel, color, valueFormatter) {
+    const target = document.getElementById(containerId);
+    if (!target) return;
+    if (!Array.isArray(series) || series.length === 0) {
+      target.innerHTML = '<div class="flex h-52 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">No data available</div>';
+      return;
+    }
+
+    const x = series.map((point) => point.date);
+    const y = series.map((point) => Number(point.value || 0));
+    const hoverText = series.map((point) => `${point.date}<br>${yLabel}: ${valueFormatter(point.value)}`);
+
+    Plotly.newPlot(
+      target,
+      [
+        {
+          x,
+          y,
+          type: 'scatter',
+          mode: 'lines+markers',
+          line: { color, width: 3, shape: 'spline', smoothing: 0.55 },
+          marker: { size: 6, color },
+          hovertemplate: '%{text}<extra></extra>',
+          text: hoverText,
+          fill: 'tozeroy',
+          fillcolor: color.replace('1)', '0.12)').replace('rgb', 'rgba'),
+        },
+      ],
+      {
+        margin: { l: 50, r: 16, b: 42, t: 10 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        hovermode: 'x unified',
+        xaxis: {
+          title: 'Date',
+          tickfont: { size: 11, color: THEME.slate },
+          showgrid: false,
+        },
+        yaxis: {
+          title: yLabel,
+          tickfont: { size: 11, color: THEME.slate },
+          gridcolor: THEME.grid,
+        },
+      },
+      plotlyConfig()
+    );
+  }
+
+  function renderCategoryChart(rows) {
+    const target = document.getElementById('category-chart');
+    if (!target) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      target.innerHTML = '<div class="flex h-52 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">No category data</div>';
+      return;
+    }
+
+    const sorted = [...rows].sort((a, b) => Number(b.count || 0) - Number(a.count || 0)).slice(0, 10);
+    Plotly.newPlot(
+      target,
+      [
+        {
+          x: sorted.map((r) => Number(r.count || 0)),
+          y: sorted.map((r) => r.category),
+          type: 'bar',
+          orientation: 'h',
+          marker: {
+            color: sorted.map((_, idx) => idx),
+            colorscale: [
+              [0.0, '#dfeadf'],
+              [0.3, '#9bcf9f'],
+              [0.6, '#4f9f69'],
+              [1.0, '#25633b']
+            ],
+            line: { color: '#1f4f31', width: 0.5 },
+          },
+          hovertemplate: '%{y}<br>Count: %{x}<extra></extra>',
+        },
+      ],
+      {
+        margin: { l: 110, r: 16, b: 30, t: 10 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: { title: 'Count', gridcolor: THEME.grid, tickfont: { color: THEME.slate } },
+        yaxis: { automargin: true },
+      },
+      plotlyConfig()
+    );
+  }
+
+  function render3dFallback(message) {
+    const chart = document.getElementById('3d-chart');
+    chart.innerHTML = `<div class="flex h-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">${AdminApp.escapeHtml(message)}</div>`;
+  }
+
+  async function load3dChart(rangeKey) {
+    const chart = document.getElementById('3d-chart');
+    if (!chart) return;
+
+    try {
+      const rows = await AdminApp.apiFetch(`/admin/api/analytics/3d-data?range=${rangeKey}`);
+      if (!Array.isArray(rows) || rows.length === 0) {
+        render3dFallback('No data available');
+        return;
+      }
+
+      const x = rows.map((item) => item.time);
+      const y = rows.map((item) => Number(item.price));
+      const z = rows.map((item) => Number(item.quantity));
+
+      const trace = {
+        type: 'scatter3d',
+        mode: 'markers',
+        x,
+        y,
+        z,
+        text: rows.map((item) => `Time: ${new Date(item.time).toLocaleString()}<br>Price: ${AdminApp.formatCurrency(item.price)}<br>Quantity: ${item.quantity}`),
+        hovertemplate: '%{text}<extra></extra>',
+        marker: {
+          size: 6,
+          color: z,
+          colorscale: [
+            [0.0, '#dfeadf'],
+            [0.25, '#9bcf9f'],
+            [0.5, '#4f9f69'],
+            [0.75, '#2f7d4a'],
+            [1.0, '#1b4332']
+          ],
+          colorbar: { title: 'Quantity' },
+          opacity: 0.85,
+        },
+      };
+
+      const layout = {
+        margin: { l: 0, r: 0, b: 0, t: 8 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        scene: {
+          xaxis: { title: 'Time', gridcolor: THEME.grid, zerolinecolor: THEME.grid },
+          yaxis: { title: 'Price', gridcolor: THEME.grid, zerolinecolor: THEME.grid },
+          zaxis: { title: 'Quantity', gridcolor: THEME.grid, zerolinecolor: THEME.grid },
+        },
+      };
+
+      Plotly.newPlot(chart, [trace], layout, plotlyConfig());
+    } catch (error) {
+      render3dFallback('No data available');
+      AdminApp.notify(error.message, 'error');
+    }
+  }
+
+  async function toggle3dFullscreen() {
+    const panel = document.getElementById('chart-3d-panel');
+    const button = document.getElementById('chart-3d-fullscreen');
+    if (!panel || !button) return;
+
+    try {
+      if (document.fullscreenElement === panel) {
+        await document.exitFullscreen();
+      } else {
+        await panel.requestFullscreen();
+      }
+    } catch (error) {
+      AdminApp.notify('Fullscreen is not supported in this browser.', 'error');
+    }
+  }
+
+  function handle3dFullscreenChange() {
+    const panel = document.getElementById('chart-3d-panel');
+    const button = document.getElementById('chart-3d-fullscreen');
+    const chart = document.getElementById('3d-chart');
+    if (!panel || !button || !chart) return;
+
+    const isFullscreen = document.fullscreenElement === panel;
+    button.textContent = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
+    if (isFullscreen) {
+      chart.classList.add('h-[80vh]');
+      chart.classList.remove('h-[420px]');
+    } else {
+      chart.classList.remove('h-[80vh]');
+      chart.classList.add('h-[420px]');
+    }
+
+    if (typeof Plotly !== 'undefined') {
+      window.setTimeout(() => Plotly.Plots.resize(chart), 80);
+    }
+  }
+
   async function loadAnalytics(rangeKey) {
     try {
       const [sales, orders, overview] = await Promise.all([
@@ -57,9 +296,40 @@
         AdminApp.apiFetch(`/admin/api/analytics/overview?range=${rangeKey}`)
       ]);
 
-      AdminApp.renderBarChart('sales-chart', sales.series || [], (v) => AdminApp.formatCurrency(v));
-      AdminApp.renderBarChart('orders-chart', orders.series || [], (v) => v.toString());
-      AdminApp.renderBarChart('users-chart', overview.user_growth || [], (v) => v.toString());
+      renderLineChart(
+        'sales-chart',
+        sales.series || [],
+        'GMV Trend',
+        'Revenue',
+        THEME.primary,
+        (v) => AdminApp.formatCurrency(v)
+      );
+      renderLineChart(
+        'orders-chart',
+        orders.series || [],
+        'Order Trend',
+        'Orders',
+        THEME.primaryDark,
+        (v) => String(v ?? 0)
+      );
+      renderLineChart(
+        'users-chart',
+        overview.user_growth || [],
+        'User Growth',
+        'Users',
+        THEME.earth,
+        (v) => String(v ?? 0)
+      );
+      renderCategoryChart(overview.category_activity || []);
+
+      const salesSeries = sales.series || [];
+      const ordersSeries = orders.series || [];
+      const totalGmv = salesSeries.reduce((acc, point) => acc + Number(point.value || 0), 0);
+      const totalOrders = ordersSeries.reduce((acc, point) => acc + Number(point.value || 0), 0);
+      const avgOrders = ordersSeries.length ? (totalOrders / ordersSeries.length) : 0;
+      document.getElementById('analytics-kpi-gmv').textContent = AdminApp.formatCurrency(totalGmv);
+      document.getElementById('analytics-kpi-orders').textContent = String(totalOrders);
+      document.getElementById('analytics-kpi-avg-orders').textContent = avgOrders.toFixed(1);
 
       const body = document.getElementById('category-body');
       body.innerHTML = (overview.category_activity || []).map((item) => `
@@ -68,13 +338,26 @@
           <td class="px-3 py-2">${item.count}</td>
         </tr>
       `).join('') || '<tr><td colspan="2" class="px-3 py-3 text-center text-slate-500">No category data</td></tr>';
+
+      await load3dChart(rangeKey);
     } catch (error) {
       AdminApp.notify(error.message, 'error');
+      render3dFallback('No data available');
     }
   }
 
   const rangeSelect = document.getElementById('analytics-range');
   rangeSelect.addEventListener('change', () => loadAnalytics(rangeSelect.value));
+  document.getElementById('chart-3d-fullscreen').addEventListener('click', toggle3dFullscreen);
+  document.addEventListener('fullscreenchange', handle3dFullscreenChange);
+  window.addEventListener('resize', () => {
+    ['sales-chart', 'orders-chart', 'users-chart', 'category-chart', '3d-chart'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && typeof Plotly !== 'undefined') {
+        Plotly.Plots.resize(el);
+      }
+    });
+  });
   loadAnalytics(rangeSelect.value);
 </script>
 {% endblock %}

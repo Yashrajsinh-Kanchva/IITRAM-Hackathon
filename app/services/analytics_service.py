@@ -1,4 +1,4 @@
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.services.exceptions import ServiceError
 from app.utils.time_utils import utcnow
@@ -104,6 +104,54 @@ class AnalyticsService:
             ],
             "user_growth": self._series(start, days, users, cast=int),
         }
+
+    def get_3d_data(self, range_key="30d", limit=100):
+        """
+        Return a clean dataset for 3D analytics:
+        [{time, price, quantity}, ...]
+        """
+        start, end, _ = self._window(range_key)
+        raw_rows = self.order_repo.fetch_recent_for_3d(start, end, limit=min(max(limit, 1), 100))
+
+        cleaned = []
+        for row in raw_rows:
+            created_at = row.get("created_at")
+            if not isinstance(created_at, datetime):
+                continue
+            if created_at.tzinfo is not None:
+                created_at = created_at.astimezone(timezone.utc).replace(tzinfo=None)
+
+            price_raw = (
+                row.get("total_price")
+                if row.get("total_price") is not None
+                else row.get("total_amount")
+            )
+            if price_raw is None:
+                price_raw = row.get("price")
+            quantity_raw = (
+                row.get("quantity")
+                if row.get("quantity") is not None
+                else row.get("total_quantity")
+            )
+
+            try:
+                price = float(price_raw)
+                quantity = float(quantity_raw)
+            except (TypeError, ValueError):
+                continue
+
+            if price <= 0 or quantity <= 0:
+                continue
+
+            cleaned.append(
+                {
+                    "time": created_at.isoformat() + "Z",
+                    "price": price,
+                    "quantity": quantity,
+                }
+            )
+
+        return cleaned[:100]
 
     def _trigger(self, alert_type, severity, message, active):
         if not active or self.alert_repo is None:

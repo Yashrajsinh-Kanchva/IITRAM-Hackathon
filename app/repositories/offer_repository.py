@@ -13,6 +13,7 @@ class OfferRepository:
     def __init__(self, db):
         self.collection = db.offers
         self.products = db.products
+        self.users = db.users
 
     def find_product_by_id(self, product_id):
         oid = to_object_id(product_id)
@@ -103,6 +104,17 @@ class OfferRepository:
         if not oid:
             return None
         return self.collection.find_one({"_id": oid})
+
+    def find_user_by_id(self, user_id):
+        oid = to_object_id(user_id)
+        if not oid:
+            return None
+        return self.users.find_one({"_id": oid})
+
+    def find_user_by_email(self, email):
+        if not email:
+            return None
+        return self.users.find_one({"email": str(email).strip().lower()})
 
     def expire_offer_if_needed(self, offer_id):
         oid = to_object_id(offer_id)

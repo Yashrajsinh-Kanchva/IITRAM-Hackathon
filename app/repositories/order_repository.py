@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 
 from pymongo import ReturnDocument
 
@@ -70,3 +71,29 @@ class OrderRepository:
             key = created.date().isoformat()
             buckets[key] = buckets.get(key, 0) + 1
         return buckets
+
+    def fetch_recent_for_3d(self, start_dt, end_dt, limit=100):
+        """Fetch recent order records for 3D analytics with lightweight projection."""
+        query = {"created_at": {"$gte": start_dt, "$lte": end_dt}}
+        projection = {
+            "_id": 0,
+            "created_at": 1,
+            "total_price": 1,
+            "total_amount": 1,
+            "price": 1,
+            "quantity": 1,
+            "total_quantity": 1,
+        }
+        cursor = (
+            self.collection.find(query, projection)
+            .sort("created_at", -1)
+            .limit(limit)
+        )
+        items = []
+        for doc in cursor:
+            created_at = doc.get("created_at")
+            if isinstance(created_at, datetime) and created_at.tzinfo is not None:
+                created_at = created_at.astimezone(timezone.utc).replace(tzinfo=None)
+                doc["created_at"] = created_at
+            items.append(doc)
+        return items

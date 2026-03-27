@@ -16,7 +16,7 @@ class OfferService:
         self.expiry_hours = expiry_hours
 
     def create_offer(self, payload, actor):
-        self._require_role(actor, "buyer")
+        actor_user = self._load_actor(actor, required_role="buyer")
         product_id = self._clean_string(payload.get("product_id"), "product_id")
         price = self._as_positive_number(payload.get("price"), "price")
         quantity = self._as_positive_int(payload.get("quantity"), "quantity")
@@ -29,14 +29,14 @@ class OfferService:
         farmer_id = self._owner_from_product(product)
         if not farmer_id:
             raise ServiceError("Product owner not set", status_code=400)
-        if farmer_id == actor["user_id"]:
+        if farmer_id == actor_user["id"]:
             raise ServiceError("Farmer cannot create offer on own product", status_code=403)
 
-        self.offer_repo.expire_active_offer_for_pair(product_id, actor["user_id"])
+        self.offer_repo.expire_active_offer_for_pair(product_id, actor_user["id"])
         expires_at = utcnow() + timedelta(hours=self.expiry_hours)
         created, error = self.offer_repo.create_offer(
             product_id=product_id,
-            buyer_id=actor["user_id"],
+            buyer_id=actor_user["id"],
             farmer_id=farmer_id,
             price=price,
             quantity=quantity,
@@ -54,20 +54,19 @@ class OfferService:
         return created
 
     def list_offers(self, query_args, actor):
+        actor_user = self._load_actor(actor)
         product_id = self._clean_string(query_args.get("product_id"), "product_id")
         product = self.offer_repo.find_product_by_id(product_id)
         if not product:
             raise ServiceError("Product not found", status_code=404)
 
         farmer_id = self._owner_from_product(product)
-        if actor["role"] == "farmer" and actor["user_id"] != farmer_id:
+        if actor_user["role"] == "farmer" and actor_user["id"] != farmer_id:
             raise ServiceError("Only owner farmer can view offers", status_code=403)
-        if actor["role"] == "buyer":
-            pass
 
         self.offer_repo.expire_offers_for_product(product_id)
         pagination = parse_pagination(query_args, default_page_size=self.page_size)
-        buyer_id = actor["user_id"] if actor["role"] == "buyer" else None
+        buyer_id = actor_user["id"] if actor_user["role"] == "buyer" else None
         items, meta = self.offer_repo.list_by_product(
             product_id=product_id,
             page=pagination["page"],
@@ -77,7 +76,7 @@ class OfferService:
         return {"items": items, "pagination": meta}
 
     def respond_offer(self, offer_id, payload, actor):
-        self._require_role(actor, "farmer")
+        actor_user = self._load_actor(actor, required_role="farmer")
         response = self._clean_string(payload.get("response"), "response").lower()
         if response not in {"accepted", "rejected", "countered"}:
             raise ServiceError("response must be accepted, rejected, or countered", status_code=400)
@@ -86,7 +85,7 @@ class OfferService:
         if not offer:
             raise ServiceError("Offer not found", status_code=404)
 
-        if offer.get("farmer_id") != actor["user_id"]:
+        if offer.get("farmer_id") != actor_user["id"]:
             raise ServiceError("Only product owner can respond to offer", status_code=403)
 
         expired_doc = self.offer_repo.expire_offer_if_needed(offer_id)
@@ -116,8 +115,8 @@ class OfferService:
             offer_id=offer_id,
             expected_statuses=expected_statuses,
             response_status=response,
-            actor_id=actor["user_id"],
-            actor_role=actor["role"],
+            actor_id=actor_user["id"],
+            actor_role=actor_user["role"],
             counter_price=counter_price,
             counter_quantity=counter_quantity,
             note=note,
@@ -126,7 +125,7 @@ class OfferService:
         if not updated:
             logger.warning(
                 "Offer respond race/conflict",
-                extra={"offer_id": offer_id, "response": response, "farmer_id": actor["user_id"]},
+                extra={"offer_id": offer_id, "response": response, "farmer_id": actor_user["id"]},
             )
             latest = self.offer_repo.find_by_id(offer_id)
             if latest and latest.get("status") == "accepted":
@@ -137,17 +136,34 @@ class OfferService:
         return updated
 
     def _owner_from_product(self, product):
-        return (
-            product.get("farmer_id")
-            or product.get("seller_id")
-            or product.get("owner_id")
-            or product.get("user_id")
-            or product.get("seller_email")
-        )
+        for field in ("farmer_id", "seller_id", "owner_id", "user_id"):
+            user_id = product.get(field)
+            if user_id:
+                owner = self.offer_repo.find_user_by_id(user_id)
+                if owner and owner.get("role") == "farmer":
+                    return str(owner["_id"])
 
-    def _require_role(self, actor, role):
-        if actor.get("role") != role:
+        for field in ("seller_email", "owner_email", "farmer_email"):
+            email = product.get(field)
+            if email:
+                owner = self.offer_repo.find_user_by_email(email)
+                if owner and owner.get("role") == "farmer":
+                    return str(owner["_id"])
+        return None
+
+    def _load_actor(self, actor, required_role=None):
+        role = actor.get("role")
+        user_id = self._clean_string(actor.get("user_id"), "user_id")
+        user = self.offer_repo.find_user_by_id(user_id)
+        if not user:
+            raise ServiceError("Unauthorized user", status_code=401)
+        if user.get("status") != "active":
+            raise ServiceError("User account is not active", status_code=403)
+        if role != user.get("role"):
             raise ServiceError("Unauthorized role", status_code=403)
+        if required_role and role != required_role:
+            raise ServiceError("Unauthorized role", status_code=403)
+        return {"id": str(user["_id"]), "role": role}
 
     def _clean_string(self, value, field):
         sanitized = str(value or "").replace("\x00", "").strip()

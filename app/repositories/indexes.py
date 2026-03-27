@@ -8,6 +8,7 @@ def ensure_indexes(db):
         [("status", ASCENDING), ("category", ASCENDING), ("created_at", ASCENDING)]
     )
     db.orders.create_index([("status", ASCENDING), ("created_at", ASCENDING)])
+    db.orders.create_index([("created_at", ASCENDING)])
     db.transactions.create_index(
         [("payment_status", ASCENDING), ("created_at", ASCENDING)]
     )

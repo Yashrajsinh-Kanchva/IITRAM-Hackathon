@@ -304,6 +304,17 @@ def analytics_overview_api():
         return _handle_service_error(error)
 
 
+@admin_bp.get("/api/analytics/3d-data")
+@admin_required
+def analytics_3d_data_api():
+    try:
+        range_key = (request.args.get("range") or "30d").strip().lower()
+        data = get_services()["analytics"].get_3d_data(range_key=range_key, limit=100)
+        return jsonify(data)
+    except ServiceError as error:
+        return _handle_service_error(error)
+
+
 @admin_bp.get("/api/audit-logs")
 @admin_required
 def audit_logs_api():

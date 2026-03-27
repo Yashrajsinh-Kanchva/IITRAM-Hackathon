@@ -1184,3 +1184,96 @@ video {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
+/* Admin UX Typography + Sidebar Motion Enhancements */
+.admin-typography {
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+
+.admin-typography h1,
+.admin-typography h2,
+.admin-typography h3,
+.admin-typography h4 {
+  font-family: 'Sora', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.005em;
+}
+
+.admin-shell {
+  position: relative;
+  overflow-x: clip;
+}
+
+.admin-nav-link {
+  position: relative;
+  transition: transform 220ms ease, background-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
+}
+
+.admin-nav-link::before {
+  content: '';
+  position: absolute;
+  left: -0.25rem;
+  top: 18%;
+  height: 64%;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #34d399 0%, #60a5fa 100%);
+  opacity: 0;
+  transform: scaleY(0.3);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.admin-nav-link:hover {
+  transform: translateX(4px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+
+.admin-nav-link:hover::before,
+.admin-nav-link.bg-brand-600::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+@media (min-width: 1024px) {
+  #sidebar-edge-trigger {
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.16) 0%, rgba(15, 23, 42, 0.05) 60%, transparent 100%);
+    transition: opacity 220ms ease;
+    opacity: 0.7;
+  }
+
+  #sidebar-edge-trigger:hover {
+    opacity: 1;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 45;
+    width: 18rem;
+    transform: translateX(-104%);
+    opacity: 0.98;
+    transition: transform 420ms cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 280ms ease, opacity 280ms ease;
+    background: radial-gradient(circle at 20% 0%, #1f2937 0%, #0f172a 64%);
+    box-shadow: none;
+    will-change: transform, opacity;
+  }
+
+  .admin-main {
+    margin-left: 0;
+    transition: margin-left 420ms cubic-bezier(0.2, 0.9, 0.2, 1), filter 320ms ease;
+  }
+
+  .admin-shell.sidebar-visible .admin-sidebar {
+    transform: translateX(0);
+    opacity: 1;
+    box-shadow: 18px 0 32px rgba(2, 6, 23, 0.33);
+  }
+
+  .admin-shell.sidebar-visible .admin-main {
+    margin-left: 18rem;
+    filter: saturate(1.03);
+  }
+}
