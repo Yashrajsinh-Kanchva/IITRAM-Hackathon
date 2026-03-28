@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logged Out | KrishiConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--light); }
+    .logout-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:3rem 2.5rem; max-width:400px; width:90%; text-align:center; box-shadow:var(--shadow-md); }
+    .logout-icon { width:64px; height:64px; background:var(--primary-pale); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.4rem; }
+    .logout-icon svg { width:28px; height:28px; color:var(--primary); }
+    .logout-card h1 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--dark); margin-bottom:.5rem; }
+    .logout-card p  { color:var(--mid); font-size:.9rem; margin-bottom:1.8rem; line-height:1.6; }
+    .btn-login { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; width:100%; background:var(--primary); color:#fff; border:none; border-radius:var(--r-sm); font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600; padding:.82rem; cursor:pointer; text-decoration:none; box-shadow:0 2px 10px rgba(45,106,79,.25); transition:.2s ease; }
+    .btn-login:hover { background:var(--primary-h); }
+  </style>
+</head>
+<body>
+  <div class="logout-card">
+    <div class="logout-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </div>
+    <h1>You've been logged out</h1>
+    <p>Your session has been cleared. Another farmer can now log in securely.</p>
+    <a href="/" class="btn-login">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        <polyline points="10 17 15 12 10 7"/>
+        <line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      Login as Farmer
+    </a>
+  </div>
+</body>
+</html>

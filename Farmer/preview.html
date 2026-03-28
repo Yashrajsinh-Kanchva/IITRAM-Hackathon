@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farmer Profile Setup | KrishiConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+/* ═══════════════════════════════════ Tokens ═══════════════════════════════════ */
+:root {
+  --bg:         #07120d;
+  --card-bg:    rgba(255,255,255,0.04);
+  --border:     rgba(255,255,255,0.09);
+  --green:      #52B788;
+  --green-dark: #2D6A4F;
+  --green-glow: rgba(82,183,136,0.3);
+  --orange:     #F4A261;
+  --text:       #e8f5ee;
+  --muted:      #7fa98e;
+  --error:      #ff6b6b;
+  --input-bg:   rgba(255,255,255,0.05);
+  --input-focus:rgba(82,183,136,0.15);
+  --shadow:     0 25px 60px rgba(0,0,0,0.5);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ── BG blobs ── */
+.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.35;animation:floatOrb 12s ease-in-out infinite alternate}
+.orb-1{width:600px;height:600px;background:radial-gradient(circle,#1b5e3b,transparent);top:-150px;left:-150px;animation-delay:0s}
+.orb-2{width:500px;height:500px;background:radial-gradient(circle,#0a3d24,transparent);bottom:-100px;right:-100px;animation-delay:4s}
+.orb-3{width:400px;height:400px;background:radial-gradient(circle,rgba(244,162,97,0.18),transparent);top:40%;left:50%;transform:translate(-50%,-50%);animation-delay:8s}
+@keyframes floatOrb{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,40px) scale(1.08)}}
+
+/* ── Page ── */
+.page-wrapper{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:2rem 1.5rem 6rem}
+
+/* ── Header ── */
+.site-header{display:flex;justify-content:space-between;align-items:center;padding:1rem 0 2rem}
+.logo{display:flex;align-items:center;gap:.6rem;font-size:1.4rem;font-weight:700}
+.logo-icon{font-size:1.6rem}
+.logo-accent{color:var(--green)}
+.header-badge{background:rgba(82,183,136,.12);border:1px solid rgba(82,183,136,.3);color:var(--green);font-size:.78rem;font-weight:600;padding:.35rem .9rem;border-radius:99px;letter-spacing:.04em}
+
+/* ── Hero ── */
+.hero-text{text-align:center;margin-bottom:2.5rem}
+.hero-text h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;background:linear-gradient(135deg,var(--text) 30%,var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:.8rem}
+.hero-text p{color:var(--muted);font-size:1.05rem;max-width:500px;margin:0 auto;line-height:1.6}
+
+/* ── Stepper ── */
+.stepper{display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem}
+.step-item{display:flex;flex-direction:column;align-items:center;gap:.4rem;opacity:.4;transition:opacity .3s}
+.step-item.active{opacity:1}
+.step-item.done{opacity:.75}
+.step-circle{width:52px;height:52px;border-radius:50%;background:var(--card-bg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;transition:all .3s}
+.step-item.active .step-circle{background:linear-gradient(135deg,var(--green-dark),var(--green));border-color:var(--green);box-shadow:0 0 20px var(--green-glow);transform:scale(1.1)}
+.step-item.done .step-circle{background:rgba(82,183,136,.2);border-color:var(--green)}
+.step-label{font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em}
+.step-item.active .step-label{color:var(--green)}
+.step-connector{width:80px;height:2px;background:var(--border);margin:0 .5rem 1.4rem;transition:background .5s}
+.step-connector.done{background:var(--green)}
+
+/* ── Progress ── */
+.progress-wrap{display:flex;align-items:center;gap:1rem;margin-bottom:2rem}
+.progress-track{flex:1;height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;width:33.33%;background:linear-gradient(90deg,var(--green-dark),var(--green));border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 10px var(--green-glow)}
+.progress-text{color:var(--muted);font-size:.8rem;white-space:nowrap;font-weight:500}
+
+/* ── Card ── */
+.form-card{background:var(--card-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:1.5rem;padding:2.5rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green-dark),var(--green),var(--orange));border-radius:99px 99px 0 0}
+
+/* ── Step transitions ── */
+.form-step{display:none;animation:stepIn .35s ease forwards}
+.form-step.active{display:block}
+@keyframes stepIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes stepBack{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+.form-step.going-back{animation:stepBack .35s ease forwards}
+
+/* ── Step header ── */
+.step-header{display:flex;align-items:center;gap:1.2rem;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.step-emoji-big{font-size:2.5rem;line-height:1}
+.step-header h2{font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:.2rem}
+.step-header p{color:var(--muted);font-size:.9rem}
+
+/* ── Form ── */
+.form-group{margin-bottom:1.4rem}
+label{display:block;font-size:.85rem;font-weight:600;color:var(--muted);margin-bottom:.5rem;letter-spacing:.03em}
+.req{color:#ff6b6b;margin-left:.15rem}
+.opt-tag{background:rgba(244,162,97,.12);color:var(--orange);border:1px solid rgba(244,162,97,.25);font-size:.7rem;font-weight:600;padding:.15rem .5rem;border-radius:99px;vertical-align:middle;margin-left:.4rem}
+.field-hint{color:var(--muted);font-size:.8rem;margin-bottom:.8rem}
+.input-box{display:flex;align-items:center;background:var(--input-bg);border:1.5px solid var(--border);border-radius:.7rem;overflow:hidden;transition:all .25s}
+.input-box:focus-within{border-color:var(--green);background:var(--input-focus);box-shadow:0 0 0 3px var(--green-glow)}
+.iicon{padding:0 .75rem;font-size:1.05rem;pointer-events:none;flex-shrink:0}
+.input-box input,.input-box select{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Outfit',sans-serif;font-size:.95rem;padding:.82rem .5rem .82rem 0}
+.input-box select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:1.5rem}
+.input-box select option{background:#1a2e1e;color:var(--text)}
+.input-box input::placeholder{color:rgba(255,255,255,0.22)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:540px){.form-row{grid-template-columns:1fr}}
+
+/* ── Crop pills ── */
+.crop-grid{display:flex;flex-wrap:wrap;gap:.6rem}
+.crop-pill{cursor:pointer}
+.crop-pill input{display:none}
+.crop-pill span{display:inline-flex;align-items:center;gap:.3rem;padding:.5rem 1rem;border-radius:99px;font-size:.9rem;font-weight:500;color:var(--muted);background:var(--input-bg);border:1.5px solid var(--border);transition:all .2s;user-select:none}
+.crop-pill input:checked+span{background:rgba(82,183,136,.18);border-color:var(--green);color:var(--green);box-shadow:0 0 10px rgba(82,183,136,.2)}
+.crop-pill span:hover{border-color:rgba(82,183,136,.5);color:var(--text)}
+
+/* ── Custom crop ── */
+.custom-add-box{overflow:visible}
+.btn-add{background:linear-gradient(135deg,var(--green-dark),var(--green));border:none;color:#fff;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;padding:.5rem 1rem;margin:.25rem;border-radius:.5rem;cursor:pointer;white-space:nowrap;transition:opacity .2s,transform .1s}
+.btn-add:hover{opacity:.85}
+.btn-add:active{transform:scale(.97)}
+
+/* ── Security notice ── */
+.security-notice{display:flex;align-items:center;gap:.7rem;background:rgba(82,183,136,.07);border:1px solid rgba(82,183,136,.2);border-radius:.8rem;padding:.9rem 1.2rem;font-size:.87rem;color:var(--muted);margin-bottom:1.6rem}
+.security-notice span:first-child{font-size:1.2rem}
+
+/* ── OR divider ── */
+.or-divider{display:flex;align-items:center;gap:1rem;margin:1.4rem 0;color:var(--muted);font-size:.82rem}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Errors ── */
+.err{display:block;color:var(--error);font-size:.78rem;margin-top:.35rem;min-height:1em;font-weight:500}
+
+/* ── Buttons ── */
+.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:2rem;gap:1rem}
+.btn-next,.btn-submit,.btn-back{display:inline-flex;align-items:center;gap:.5rem;font-family:'Outfit',sans-serif;font-weight:600;font-size:1rem;padding:.75rem 2rem;border-radius:.7rem;cursor:pointer;border:none;transition:all .25s}
+.btn-next,.btn-submit{background:linear-gradient(135deg,var(--green-dark),var(--green));color:#fff;box-shadow:0 4px 20px var(--green-glow)}
+.btn-next:hover,.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--green-glow)}
+.btn-next:active,.btn-submit:active{transform:scale(.98)}
+.btn-submit{padding:.85rem 2.4rem}
+.btn-back{background:var(--input-bg);color:var(--muted);border:1.5px solid var(--border)}
+.btn-back:hover{border-color:var(--green);color:var(--text)}
+.arrow{font-size:1.1rem}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* ── Success overlay ── */
+.success-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:999;align-items:center;justify-content:center}
+.success-overlay.show{display:flex}
+.success-card{background:linear-gradient(145deg,#0d2118,#122b1c);border:1px solid rgba(82,183,136,.3);border-radius:1.5rem;padding:3rem 2.5rem;max-width:440px;width:90%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 40px var(--green-glow);animation:popIn .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.8) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.success-icon{font-size:4rem;margin-bottom:1rem}
+.success-card h2{font-size:1.8rem;font-weight:800;margin-bottom:.5rem}
+.success-card p{color:var(--muted);font-size:.95rem;margin-bottom:1.5rem}
+.success-checks{display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem}
+.check-item{background:rgba(82,183,136,.08);border:1px solid rgba(82,183,136,.2);border-radius:.6rem;padding:.6rem 1rem;font-size:.9rem;color:var(--green);font-weight:500;animation:slideCheck .4s ease forwards;opacity:0}
+.check-item:nth-child(1){animation-delay:.1s}
+.check-item:nth-child(2){animation-delay:.25s}
+.check-item:nth-child(3){animation-delay:.4s}
+@keyframes slideCheck{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.btn-dashboard{display:inline-block;background:linear-gradient(135deg,var(--green-dark),var(--green));color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;padding:.9rem 2.5rem;border-radius:.8rem;cursor:pointer;box-shadow:0 4px 20px var(--green-glow);transition:all .25s}
+.btn-dashboard:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--green-glow)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:rgba(82,183,136,.3);border-radius:99px}
+  </style>
+</head>
+<body>
+
+<div class="bg-layer">
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+</div>
+
+<div class="page-wrapper">
+
+  <header class="site-header">
+    <div class="logo">
+      <span class="logo-icon">🌾</span>
+      <span class="logo-text">Krishi<span class="logo-accent">Connect</span></span>
+    </div>
+    <div class="header-badge">✨ First‑Time Setup</div>
+  </header>
+
+  <div class="hero-text">
+    <h1>Set Up Your Farmer Profile</h1>
+    <p>Fill this once — buyers will trust you more and we'll connect you to the nearest buyers for your crops.</p>
+  </div>
+
+  <div class="stepper">
+    <div class="step-item active" id="si-1">
+      <div class="step-circle">👤</div>
+      <span class="step-label">Personal</span>
+    </div>
+    <div class="step-connector" id="sc-1"></div>
+    <div class="step-item" id="si-2">
+      <div class="step-circle">🌱</div>
+      <span class="step-label">Farm</span>
+    </div>
+    <div class="step-connector" id="sc-2"></div>
+    <div class="step-item" id="si-3">
+      <div class="step-circle">🏦</div>
+      <span class="step-label">Payment</span>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <span class="progress-text" id="progressText">Step 1 of 3 — Personal Info</span>
+  </div>
+
+  <div class="form-card">
+
+    <!-- STEP 1 -->
+    <div class="form-step active" id="step1">
+      <div class="step-header">
+        <div class="step-emoji-big">👤</div>
+        <div>
+          <h2>Personal Information</h2>
+          <p>Buyers will see your name and location to build trust</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="name">Full Name <span class="req">*</span></label>
+        <div class="input-box">
+          <span class="iicon">🧑‍🌾</span>
+          <input id="name" type="text" placeholder="e.g. Ramesh Patel" />
+        </div>
+        <span class="err" id="nameErr"></span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="village">Village <span class="req">*</span></label>
+          <div class="input-box">
+            <span class="iicon">🏘️</span>
+            <input id="village" type="text" placeholder="e.g. Vadnagar" />
+          </div>
+          <span class="err" id="villageErr"></span>
+        </div>
+        <div class="form-group">
+          <label for="city">City / Taluka <span class="req">*</span></label>
+          <div class="input-box">
+            <span class="iicon">🏙️</span>
+            <input id="city" type="text" placeholder="e.g. Mehsana" />
+          </div>
+          <span class="err" id="cityErr"></span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="state">State <span class="req">*</span></label>
+          <div class="input-box" style="position:relative">
+            <span class="iicon">📍</span>
+            <select id="state">
+              <option value="">Select State</option>
+              <option>Andhra Pradesh</option><option>Assam</option>
+              <option>Bihar</option><option>Chhattisgarh</option>
+              <option>Gujarat</option><option>Haryana</option>
+              <option>Himachal Pradesh</option><option>Jharkhand</option>
+              <option>Karnataka</option><option>Kerala</option>
+              <option>Madhya Pradesh</option><option>Maharashtra</option>
+              <option>Odisha</option><option>Punjab</option>
+              <option>Rajasthan</option><option>Tamil Nadu</option>
+              <option>Telangana</option><option>Uttar Pradesh</option>
+              <option>Uttarakhand</option><option>West Bengal</option>
+            </select>
+          </div>
+          <span class="err" id="stateErr"></span>
+        </div>
+        <div class="form-group">
+          <label for="pincode">Pincode <span class="req">*</span></label>
+          <div class="input-box">
+            <span class="iicon">📮</span>
+            <input id="pincode" type="text" placeholder="e.g. 384355" maxlength="6" inputmode="numeric" />
+          </div>
+          <span class="err" id="pincodeErr"></span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <span></span>
+        <button class="btn-next" id="next1" onclick="goTo(2)">Next <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="form-step" id="step2">
+      <div class="step-header">
+        <div class="step-emoji-big">🌱</div>
+        <div>
+          <h2>Farm Details</h2>
+          <p>Your crops &amp; farm size help buyers find the perfect match</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Crop Types <span class="req">*</span></label>
+        <p class="field-hint">Tap all crops you grow — you can update later</p>
+        <div class="crop-grid" id="cropGrid">
+          <label class="crop-pill"><input type="checkbox" value="Wheat" /><span>🌾 Wheat</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Rice" /><span>🍚 Rice</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Maize" /><span>🌽 Maize</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Cotton" /><span>🧶 Cotton</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Sugarcane" /><span>🎋 Sugarcane</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Soybean" /><span>🫘 Soybean</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Groundnut" /><span>🥜 Groundnut</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Vegetables" /><span>🥦 Vegetables</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Fruits" /><span>🍎 Fruits</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Pulses" /><span>🫛 Pulses</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Mustard" /><span>🌼 Mustard</span></label>
+          <label class="crop-pill"><input type="checkbox" value="Spices" /><span>🌶️ Spices</span></label>
+        </div>
+        <span class="err" id="cropErr"></span>
+      </div>
+
+      <div class="form-group">
+        <label for="customCrop">Other Crop <span class="opt-tag">Optional</span></label>
+        <div class="input-box custom-add-box">
+          <span class="iicon">✏️</span>
+          <input id="customCrop" type="text" placeholder="Type a crop and press Add…" />
+          <button type="button" class="btn-add" onclick="addCustomCrop()">+ Add</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="farmSize">Farm Size <span class="opt-tag">Optional</span></label>
+          <div class="input-box">
+            <span class="iicon">📐</span>
+            <input id="farmSize" type="number" placeholder="e.g. 5" min="0" step="0.5" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="farmSizeUnit">Unit</label>
+          <div class="input-box">
+            <span class="iicon">📏</span>
+            <select id="farmSizeUnit">
+              <option value="acres">Acres</option>
+              <option value="hectares">Hectares</option>
+              <option value="bigha">Bigha</option>
+              <option value="guntha">Guntha</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-back" onclick="goTo(1,true)"><span class="arrow">←</span> Back</button>
+        <button class="btn-next" onclick="goTo(3)">Next <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="form-step" id="step3">
+      <div class="step-header">
+        <div class="step-emoji-big">🏦</div>
+        <div>
+          <h2>Payment Details</h2>
+          <p>Receive money directly after every successful sale</p>
+        </div>
+      </div>
+
+      <div class="security-notice">
+        <span>🔒</span>
+        <span>Your banking info is <strong>encrypted</strong> and never shared with buyers</span>
+      </div>
+
+      <div class="form-group">
+        <label for="accHolder">Account Holder Name <span class="req">*</span></label>
+        <div class="input-box">
+          <span class="iicon">👤</span>
+          <input id="accHolder" type="text" placeholder="Name as on bank passbook" />
+        </div>
+        <span class="err" id="accHolderErr"></span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="accNumber">Account Number <span class="req">*</span></label>
+          <div class="input-box">
+            <span class="iicon">💳</span>
+            <input id="accNumber" type="text" placeholder="e.g. 001234567890" maxlength="18" inputmode="numeric" />
+          </div>
+          <span class="err" id="accNumberErr"></span>
+        </div>
+        <div class="form-group">
+          <label for="ifsc">IFSC Code <span class="req">*</span></label>
+          <div class="input-box">
+            <span class="iicon">🔢</span>
+            <input id="ifsc" type="text" placeholder="e.g. SBIN0001234" maxlength="11" style="text-transform:uppercase" />
+          </div>
+          <span class="err" id="ifscErr"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bankName">Bank Name <span class="opt-tag">Optional</span></label>
+        <div class="input-box">
+          <span class="iicon">🏛️</span>
+          <input id="bankName" type="text" placeholder="e.g. State Bank of India" />
+        </div>
+      </div>
+
+      <div class="or-divider"><span>or add UPI</span></div>
+
+      <div class="form-group">
+        <label for="upiId">UPI ID <span class="opt-tag">Optional</span></label>
+        <div class="input-box">
+          <span class="iicon">📱</span>
+          <input id="upiId" type="text" placeholder="e.g. ramesh@okaxis" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-back" onclick="goTo(2,true)"><span class="arrow">←</span> Back</button>
+        <button class="btn-submit" id="submitBtn" onclick="submitProfile()">
+          <span id="btnText">Complete Setup 🚀</span>
+          <span id="btnLoader" style="display:none">⏳ Saving…</span>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /form-card -->
+
+  <!-- Success overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-card">
+      <div class="success-icon">🎉</div>
+      <h2>Profile Created!</h2>
+      <p>Your farmer profile is live. Buyers can now discover you and your crops.</p>
+      <div class="success-checks">
+        <div class="check-item">✅ Trust badge activated</div>
+        <div class="check-item">✅ Distance calculation ready</div>
+        <div class="check-item">✅ Payment gateway linked</div>
+      </div>
+      <button class="btn-dashboard" onclick="alert('Redirecting to dashboard…')">
+        Go to Dashboard →
+      </button>
+    </div>
+  </div>
+
+</div><!-- /page-wrapper -->
+
+<script>
+/* ─── profile.js (inline for standalone preview) ─── */
+let currentStep = 1;
+const TOTAL = 3;
+const labels = [
+  "Step 1 of 3 — Personal Info",
+  "Step 2 of 3 — Farm Details",
+  "Step 3 of 3 — Payment Info",
+];
+
+function goTo(step, back=false) {
+  if (!validate(currentStep)) return;
+  const prev = document.getElementById(`step${currentStep}`);
+  const next = document.getElementById(`step${step}`);
+  prev.classList.remove("active");
+  if (back) next.classList.add("going-back");
+  else next.classList.remove("going-back");
+  next.classList.add("active");
+  if (back) setTimeout(() => next.classList.remove("going-back"), 400);
+  currentStep = step;
+  updateUI();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function updateUI() {
+  document.getElementById("progressFill").style.width = `${(currentStep/TOTAL)*100}%`;
+  document.getElementById("progressText").textContent = labels[currentStep-1];
+  for(let i=1;i<=TOTAL;i++){
+    const si=document.getElementById(`si-${i}`);
+    si.classList.remove("active","done");
+    if(i===currentStep) si.classList.add("active");
+    if(i<currentStep) si.classList.add("done");
+  }
+  for(let i=1;i<TOTAL;i++){
+    const sc=document.getElementById(`sc-${i}`);
+    if(sc) sc.classList.toggle("done", i<currentStep);
+  }
+}
+
+function clr(id){const e=document.getElementById(id);if(e)e.textContent="";}
+function err(id,m){const e=document.getElementById(id);if(e)e.textContent=m;}
+function shake(id){
+  const b=document.getElementById(id)?.closest(".input-box");
+  if(!b)return;
+  b.style.animation="shake .3s ease";
+  setTimeout(()=>b.style.animation="",320);
+}
+
+function validate(step) {
+  let ok=true;
+  if(step===1){
+    ["nameErr","villageErr","cityErr","stateErr","pincodeErr"].forEach(clr);
+    const n=document.getElementById("name").value.trim();
+    const v=document.getElementById("village").value.trim();
+    const c=document.getElementById("city").value.trim();
+    const s=document.getElementById("state").value;
+    const p=document.getElementById("pincode").value.trim();
+    if(!n){err("nameErr","Full name is required");shake("name");ok=false;}
+    if(!v){err("villageErr","Village is required");shake("village");ok=false;}
+    if(!c){err("cityErr","City is required");shake("city");ok=false;}
+    if(!s){err("stateErr","Please select a state");ok=false;}
+    if(!p||!/^\d{6}$/.test(p)){err("pincodeErr","Enter a valid 6-digit pincode");shake("pincode");ok=false;}
+  }
+  if(step===2){
+    clr("cropErr");
+    if(getcrops().length===0){err("cropErr","Select at least one crop type");ok=false;}
+  }
+  if(step===3){
+    ["accHolderErr","accNumberErr","ifscErr"].forEach(clr);
+    const h=document.getElementById("accHolder").value.trim();
+    const a=document.getElementById("accNumber").value.trim();
+    const i=document.getElementById("ifsc").value.trim();
+    if(!h){err("accHolderErr","Account holder name is required");shake("accHolder");ok=false;}
+    if(!a||a.length<9){err("accNumberErr","Enter a valid account number");shake("accNumber");ok=false;}
+    if(!i||!/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(i)){err("ifscErr","Enter valid IFSC (e.g. SBIN0001234)");shake("ifsc");ok=false;}
+  }
+  return ok;
+}
+
+function getcrops(){return[...document.querySelectorAll("#cropGrid input:checked")].map(c=>c.value)}
+
+function addCustomCrop(){
+  const inp=document.getElementById("customCrop");
+  const val=inp.value.trim();
+  if(!val)return;
+  const grid=document.getElementById("cropGrid");
+  const dup=[...grid.querySelectorAll("input")].some(c=>c.value.toLowerCase()===val.toLowerCase());
+  if(dup){inp.style.outlineColor="var(--error)";setTimeout(()=>inp.style.outlineColor="",1200);return;}
+  const lbl=document.createElement("label");
+  lbl.className="crop-pill";
+  lbl.innerHTML=`<input type="checkbox" value="${val}" checked><span>🌿 ${val}</span>`;
+  grid.appendChild(lbl);
+  inp.value="";inp.focus();
+}
+
+document.getElementById("customCrop")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addCustomCrop();}});
+document.getElementById("ifsc")?.addEventListener("input",function(){this.value=this.value.toUpperCase();});
+document.getElementById("pincode")?.addEventListener("input",function(){this.value=this.value.replace(/\D/g,"").slice(0,6);});
+document.getElementById("accNumber")?.addEventListener("input",function(){this.value=this.value.replace(/\D/g,"").slice(0,18);});
+
+async function submitProfile(){
+  if(!validate(3))return;
+  const btn=document.getElementById("submitBtn");
+  document.getElementById("btnText").style.display="none";
+  document.getElementById("btnLoader").style.display="inline";
+  btn.disabled=true;
+
+  // In standalone preview, show success directly
+  // In Flask version this actually POSTs to /farmer/profile-setup
+  await new Promise(r=>setTimeout(r,1500));
+  document.getElementById("successOverlay").classList.add("show");
+}
+
+// Shake keyframes
+const s=document.createElement("style");
+s.textContent=`@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}`;
+document.head.appendChild(s);
+
+updateUI();
+</script>
+</body>
+</html>

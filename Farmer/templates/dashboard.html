@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | KrishiConnect{% endblock %}
+{% block description %}Manage your farm listings, view orders, and track sales on KrishiConnect.{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <!-- ══ Hero Banner ══ -->
+  <div class="hero-section fade-d1">
+    <div class="hero-content">
+      <p class="hero-greeting">Good {{ "morning" if now_hour < 12 else "afternoon" if now_hour < 17 else "evening" }}, farmer</p>
+      <h1 class="hero-name">{{ farmer.name }}</h1>
+      <p class="hero-sub">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:.3rem"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        {{ farmer.location.village }}, {{ farmer.location.city }}, {{ farmer.location.state }}
+      </p>
+      <span class="trust-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Verified Farmer Profile
+      </span>
+
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-value" id="statTotal">{{ products|length }}</div>
+          <div class="stat-card-label">Total Listings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-value" id="statLive">{{ products|selectattr('is_live')|list|length }}</div>
+          <div class="stat-card-label">Live Now</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-value">{{ farmer.farm_size.value if farmer.farm_size and farmer.farm_size.value else '—' }}</div>
+          <div class="stat-card-label">{{ farmer.farm_size.unit if farmer.farm_size and farmer.farm_size.value else 'Farm Size' }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-value">{{ farmer.crop_types|length }}</div>
+          <div class="stat-card-label">Crop Types</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Profile Summary Cards ══ -->
+  <div class="profile-grid fade-d2">
+    <div class="d-card">
+      <div class="d-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <h3>Location</h3>
+      <div class="d-value">{{ farmer.location.village }}, {{ farmer.location.city }}</div>
+      <div class="d-value" style="font-size:.85rem;color:var(--mid)">{{ farmer.location.state }} · {{ farmer.location.pincode }}</div>
+    </div>
+
+    <div class="d-card">
+      <div class="d-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12M12 12C12 12 8 10 8 6a4 4 0 0 1 8 0c0 4-4 6-4 6z"/></svg>
+      </div>
+      <h3>Your Crops</h3>
+      <div class="crop-tags">
+        {% for crop in farmer.crop_types %}
+          <span class="crop-tag">{{ crop }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-card">
+      <div class="d-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <h3>Payment</h3>
+      <div class="d-value">{{ farmer.payment.bank_name or 'Bank Account' }}</div>
+      <div class="d-value mono" style="font-size:.82rem;color:var(--mid)">••••{{ farmer.payment.bank_acc_number[-4:] }}</div>
+      {% if farmer.payment.upi_id %}
+        <div class="d-value" style="font-size:.82rem;margin-top:.3rem;color:var(--mid)">{{ farmer.payment.upi_id }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ══ Products Section ══ -->
+  <div class="dashboard-header fade-d3">
+    <h2>My Listed Products <span class="count-tag">({{ products|length }})</span></h2>
+    <a href="/farmer/add-product" class="btn-add-product">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Product
+    </a>
+  </div>
+
+  <div class="products-grid fade-d4">
+    {% if products %}
+      {% for p in products %}
+      <div class="product-card {% if p.price_type == 'negotiable' %}surplus{% endif %}" id="card-{{ p.id }}">
+
+        <!-- Image -->
+        <div class="product-card-img">
+          {% if p.image_path %}
+            <img src="{{ url_for('static', filename=p.image_path) }}" alt="{{ p.crop_name }}" loading="lazy" />
+          {% else %}
+            <div class="product-img-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22V12M12 12C12 12 8 10 8 6a4 4 0 0 1 8 0c0 4-4 6-4 6z"/><path d="M8 16c-2 1-4 2-4 4"/><path d="M16 16c2 1 4 2 4 4"/></svg>
+              <span>No photo</span>
+            </div>
+          {% endif %}
+          <!-- Badges -->
+          <div class="product-card-badges">
+            <span class="status-chip {% if p.is_live %}live{% else %}paused{% endif %}" id="chip-{{ p.id }}">
+              {% if p.is_live %}Live{% else %}Paused{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="product-card-body">
+          <div class="product-card-name">{{ p.crop_name }}</div>
+          <div class="product-card-qty">{{ p.quantity }} {{ p.quantity_unit }} available</div>
+
+          {% if p.price_type == 'negotiable' %}
+            <div class="product-card-price negotiable">Negotiable Price</div>
+          {% else %}
+            <div class="product-card-price">₹{{ p.price }} / {{ p.quantity_unit }}</div>
+          {% endif %}
+
+          <div class="product-card-meta">
+            <span class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {{ p.harvest_date }}
+            </span>
+            <span class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              Min {{ p.min_order_qty }} {{ p.min_order_unit }}
+            </span>
+          </div>
+
+          <div class="product-card-actions">
+            <button class="btn-toggle-live {% if not p.is_live %}paused{% endif %}"
+                    id="togBtn-{{ p.id }}"
+                    onclick="toggleProduct('{{ p.id }}')">
+              {% if p.is_live %}Pause Listing{% else %}Go Live{% endif %}
+            </button>
+            <button class="btn-delete-product" onclick="showDeleteModal('{{ p.id }}','{{ p.crop_name }}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-products">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <h3>No products listed yet</h3>
+        <p>Add your first crop to start selling directly to buyers</p>
+        <a href="/farmer/add-product" class="btn-add-product" style="display:inline-flex">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Your First Product
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ══ Delete Confirm Modal ══ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h3>Remove Listing?</h3>
+    <p id="deleteModalText">This will permanently remove the listing from the marketplace.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Remove</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Live counter refresh ──────────────────────────────────────────────
+function refreshCounters() {
+  const cards   = document.querySelectorAll('.product-card');
+  const liveNow = document.querySelectorAll('.status-chip.live').length;
+  const total   = cards.length;
+
+  // Stat cards in the hero
+  const elTotal = document.getElementById('statTotal');
+  const elLive  = document.getElementById('statLive');
+  if (elTotal) flashCount(elTotal, total);
+  if (elLive)  flashCount(elLive,  liveNow);
+
+  // Section heading count tag
+  const tag = document.querySelector('.dashboard-header .count-tag');
+  if (tag) tag.textContent = `(${total})`;
+}
+
+function flashCount(el, newVal) {
+  if (parseInt(el.textContent) === newVal) return;
+  el.style.transition = 'transform .15s ease, opacity .15s ease';
+  el.style.transform  = 'scale(1.35)';
+  el.style.opacity    = '.5';
+  setTimeout(() => {
+    el.textContent  = newVal;
+    el.style.transform = 'scale(1)';
+    el.style.opacity   = '1';
+  }, 150);
+}
+
+// ── Toggle live / pause ──────────────────────────────────────────────
+async function toggleProduct(id) {
+  const res  = await fetch(`/farmer/product/${id}/toggle`, { method: 'POST' });
+  const data = await res.json();
+  if (!data.success) return;
+  const chip = document.getElementById(`chip-${id}`);
+  const btn  = document.getElementById(`togBtn-${id}`);
+  if (data.is_live) {
+    chip.className   = 'status-chip live'; chip.textContent = 'Live';
+    btn.className    = 'btn-toggle-live';  btn.textContent  = 'Pause Listing';
+  } else {
+    chip.className   = 'status-chip paused'; chip.textContent = 'Paused';
+    btn.className    = 'btn-toggle-live paused'; btn.textContent = 'Go Live';
+  }
+  refreshCounters(); // ← update stats live
+}
+
+// ── Delete with custom modal ──────────────────────────────────────────
+let _deleteId = null;
+function showDeleteModal(id, name) {
+  _deleteId = id;
+  document.getElementById('deleteModalText').textContent
+    = `This will permanently remove "${name}" from the marketplace.`;
+  document.getElementById('deleteModal').classList.add('show');
+}
+function closeDeleteModal() {
+  _deleteId = null;
+  document.getElementById('deleteModal').classList.remove('show');
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+  if (!_deleteId) return;
+  const res  = await fetch(`/farmer/product/${_deleteId}/delete`, { method: 'POST' });
+  const data = await res.json();
+  if (data.success) {
+    const card = document.getElementById(`card-${_deleteId}`);
+    card.style.transition = 'opacity .25s, transform .25s';
+    card.style.opacity    = '0';
+    card.style.transform  = 'scale(.94)';
+    setTimeout(() => {
+      card.remove();
+      refreshCounters(); // ← update stats after card is gone
+    }, 280);
+  }
+  closeDeleteModal();
+});
+// Close modal on overlay click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+
+// ── Animated number counters ──────────────────────────────────────────
+function animateCount(el, target) {
+  let curr = 0; const step = Math.max(1, Math.ceil(target / 25));
+  const t = setInterval(() => {
+    curr = Math.min(curr + step, target);
+    el.textContent = curr;
+    if (curr >= target) clearInterval(t);
+  }, 40);
+}
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const v = parseInt(e.target.textContent);
+      if (!isNaN(v) && v > 0) animateCount(e.target, v);
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: .6 });
+document.querySelectorAll('.stat-card-value').forEach(el => obs.observe(el));
+</script>
+{% endblock %}
