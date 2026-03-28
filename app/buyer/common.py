@@ -18,6 +18,45 @@ CATEGORY_ALIASES = {
 }
 
 
+def infer_category_from_product(product: dict) -> str:
+    text = " ".join(
+        str(part or "").strip().lower()
+        for part in (
+            product.get("category"),
+            product.get("crop_name"),
+            product.get("name"),
+            product.get("description"),
+        )
+    )
+    if not text:
+        return ""
+    if "honey" in text or "madhu" in text:
+        return "honey"
+    if any(token in text for token in ("milk", "dairy", "paneer", "curd", "ghee", "butter", "cheese", "yogurt")):
+        return "dairy"
+    if any(token in text for token in ("mango", "banana", "apple", "orange", "grape", "papaya", "guava", "fruit")):
+        return "fruit"
+    if any(token in text for token in ("wheat", "rice", "maize", "grain", "millet", "barley", "bajra", "jowar")):
+        return "grain"
+    if any(
+        token in text
+        for token in (
+            "tomato",
+            "onion",
+            "potato",
+            "brinjal",
+            "eggplant",
+            "cabbage",
+            "carrot",
+            "cauliflower",
+            "peas",
+            "vegetable",
+        )
+    ):
+        return "vegetable"
+    return ""
+
+
 def get_collections():
     db = current_app.db
     return {
@@ -64,7 +103,8 @@ def normalize_product(product):
     out["_id"] = str(out.get("_id"))
     out["id"] = out["_id"]
     out["name"] = out.get("name", out.get("crop_name", "Fresh Harvest"))
-    out["category"] = out.get("category", "all")
+    inferred_category = infer_category_from_product(out)
+    out["category"] = normalize_category(out.get("category") or inferred_category or "all")
 
     farmer_loc = out.get("farmer_location", {})
     loc_str = (

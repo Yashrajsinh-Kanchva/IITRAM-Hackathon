@@ -359,16 +359,60 @@ function renderWishlistPage() {
 // 🛍️ Product Logic
 let allProducts = [];
 
+function normalizeCategoryValue(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    const aliases = {
+        vegetables: 'vegetable',
+        vegetable: 'vegetable',
+        fruits: 'fruit',
+        fruit: 'fruit',
+        grains: 'grain',
+        grain: 'grain',
+        dairy: 'dairy',
+        honey: 'honey',
+        all: 'all'
+    };
+    return aliases[raw] || raw;
+}
+
+function inferProductCategory(product) {
+    const explicit = normalizeCategoryValue(product?.category || '');
+    if (explicit && explicit !== 'all') return explicit;
+
+    const text = [product?.crop_name, product?.name, product?.description]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    if (!text) return '';
+    if (/(honey|madhu)/.test(text)) return 'honey';
+    if (/(milk|dairy|paneer|curd|ghee|butter|cheese|yogurt)/.test(text)) return 'dairy';
+    if (/(mango|banana|apple|orange|grape|papaya|guava|fruit)/.test(text)) return 'fruit';
+    if (/(wheat|rice|maize|grain|millet|barley|bajra|jowar)/.test(text)) return 'grain';
+    if (/(tomato|onion|potato|brinjal|eggplant|cabbage|carrot|cauliflower|peas|vegetable)/.test(text)) return 'vegetable';
+    return '';
+}
+
 function initMarketplace() {
     const grid = document.getElementById('product-grid');
     if (!grid) return;
 
     fetchWishlist().then(() => {
         fetch(`${API_BASE}/products`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`Failed to load products (${res.status})`);
+            }
+            return res.json();
+        })
         .then(products => {
-            allProducts = products;
+            allProducts = Array.isArray(products) ? products : [];
             applyFilters();
+        })
+        .catch(() => {
+            allProducts = [];
+            renderProducts([]);
+            showToast("Unable to load products. Please check DB connection.", "error");
         });
     });
 }
@@ -377,7 +421,7 @@ function applyFilters() {
     const grid = document.getElementById('product-grid');
     if (!grid) return;
 
-    const category = document.getElementById('filter-category')?.value || 'all';
+    const category = normalizeCategoryValue(document.getElementById('filter-category')?.value || 'all');
     const location = document.getElementById('filter-location')?.value || 'all';
     const minPrice = parseFloat(document.getElementById('filter-min-price')?.value) || 0;
     const maxPrice = parseFloat(document.getElementById('filter-max-price')?.value) || Infinity;
@@ -386,8 +430,20 @@ function applyFilters() {
     const search = document.getElementById('search-input')?.value.toLowerCase() || '';
 
     let filtered = allProducts.filter(p => {
-        if (search && !p.name.toLowerCase().includes(search) && !p.category.toLowerCase().includes(search)) return false;
-        if (category !== 'all' && p.category.toLowerCase() !== category) return false;
+        const name = String(p.name || '').toLowerCase();
+        const cropName = String(p.crop_name || '').toLowerCase();
+        const description = String(p.description || '').toLowerCase();
+        const rawCategory = String(p.category || '');
+        const productCategory = inferProductCategory(p);
+
+        if (
+            search &&
+            !name.includes(search) &&
+            !cropName.includes(search) &&
+            !description.includes(search) &&
+            !rawCategory.toLowerCase().includes(search)
+        ) return false;
+        if (category !== 'all' && productCategory !== category) return false;
         if (location !== 'all' && !p.farmer.location.toLowerCase().includes(location.toLowerCase())) return false;
         if (p.price < minPrice || p.price > maxPrice) return false;
         const qty = p.quantity || p.stock || 100;
