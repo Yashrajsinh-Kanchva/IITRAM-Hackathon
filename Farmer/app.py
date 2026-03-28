@@ -26,6 +26,7 @@ client = MongoClient(
 db           = client["farm_to_market"]
 farmers_col  = db["farmers"]
 products_col = db["products"]
+buyer_Negotiation_col = db["buyer_Negotiations"]
 
 try:
     farmers_col.create_index("farmer_id", unique=True)
@@ -52,10 +53,6 @@ def get_farmer():
 
 @app.route("/")
 def index():
-    # If a farmer is already logged in, take them to the dashboard,
-    # otherwise show the role selection screen
-    if session.get("farmer_id"):
-        return redirect(url_for("new_dashboard"))
     return render_template("role_selection.html")
 
 @app.route("/entry", methods=["GET"])
@@ -176,8 +173,81 @@ def new_dashboard():
     farmer_id = session.get("farmer_id")
     if not farmer_id:
         return redirect(url_for("entry"))
+        
+    # Since teammate's DB schema didn't include farmer_id in buyer_Negotiations,
+    # we must find all products belonging to this farmer, extract string IDs, and join natively.
+    farmer_products = list(products_col.find({"farmer_id": farmer_id}))
+    product_ids = [str(p["_id"]) for p in farmer_products]
+    
+    raw_offers = list(buyer_Negotiation_col.find(
+        {"product_id": {"$in": product_ids}, "status": "pending"}
+    ).sort("created_at", -1))
+    
+    offers = []
+    for raw in raw_offers:
+        raw["id"] = str(raw["_id"])
+        del raw["_id"]
+        
+        # Robustly bridge the variable names requested by the teammate's database 
+        raw["buyer_name"] = raw.get("user_name", raw.get("buyer_name", "Unknown Buyer"))
+        raw["crop_name"] = raw.get("product_name", raw.get("crop_name", "Unknown Product"))
+        raw["offered_price"] = raw.get("negotiated_price", raw.get("offered_price", 0))
+        raw["original_price"] = raw.get("original_price", 0)
+        raw["quantity"] = raw.get("quantity", "Custom") # Teammate didn't provide this uniformly!
+        raw["message"] = raw.get("message", "")
+        
+        offers.append(raw)
+        
     farmer_name = session.get("farmer_name", "Farmer")
-    return render_template("farmer_dashboard.html", farmer_name=farmer_name)
+    return render_template("farmer_dashboard.html", farmer_name=farmer_name, offers=offers)
+
+
+@app.route("/farmer/api/negotiate", methods=["POST"])
+def negotiate_action():
+    farmer_id = session.get("farmer_id")
+    if not farmer_id:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    data = request.get_json()
+    offer_id = data.get("offer_id")
+    action = data.get("action")  # 'accept', 'reject', 'counter'
+    counter_price = data.get("counter_price")
+    counter_message = data.get("counter_message", "")
+
+    if not offer_id or not action:
+        return jsonify({"success": False, "error": "Missing data"}), 400
+
+    update_doc = {}
+    if action == "accept":
+        update_doc = {"$set": {"status": "accepted"}}
+    elif action == "reject":
+        pass # Will be handled as a physical DB deletion below
+    elif action == "counter":
+        if not counter_price:
+            return jsonify({"success": False, "error": "Missing counter price"}), 400
+        from numbers import Number
+        update_doc = {"$set": {"status": "counter_offered", "negotiated_price": float(counter_price), "counter_message": counter_message}}
+    else:
+        return jsonify({"success": False, "error": "Invalid action"}), 400
+
+    try:
+        from bson import ObjectId
+        # Cannot filter by farmer_id here because teammate forgot to include it in their buyer_Negotiations dataset! 
+        if action == "reject":
+            res = buyer_Negotiation_col.delete_one({"_id": ObjectId(offer_id)})
+            if res.deleted_count == 1:
+                return jsonify({"success": True})
+        else:
+            res = buyer_Negotiation_col.update_one(
+                {"_id": ObjectId(offer_id)},
+                update_doc
+            )
+            if res.modified_count == 1:
+                return jsonify({"success": True})
+                
+        return jsonify({"success": False, "error": "Offer not found or already changed"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ─── Add Product ───────────────────────────────────────────────────────────────

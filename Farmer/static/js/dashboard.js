@@ -11,6 +11,15 @@ function toast(msg, type='success') {
   setTimeout(() => t.remove(), 3000);
 }
 
+// ── Load specific tab from URL hash ────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const hash = window.location.hash.substring(1);
+  if (hash) {
+    const targetTab = document.querySelector(`.nav-item[data-section="${hash}"]`);
+    if (targetTab) targetTab.click();
+  }
+});
+
 // ── Nav active tab ─────────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-section]').forEach(item => {
   item.addEventListener('click', () => {
@@ -53,14 +62,39 @@ document.querySelectorAll('.btn-delete').forEach(btn => {
   });
 });
 
+// ── Offers: API Action Helper ────────────────────────────────────────
+function handleOfferAction(card, action, price = null, msg = null, successMsg, errorMsg) {
+  const offerId = card.dataset.id;
+  const payload = { offer_id: offerId, action: action };
+  if (price) payload.counter_price = price;
+  if (msg) payload.counter_message = msg;
+
+  fetch("/farmer/api/negotiate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      toast(successMsg);
+      card.classList.add('removing');
+      setTimeout(() => { card.remove(); updateOfferBadge(); }, 300);
+    } else {
+      toast(data.error || errorMsg, 'error');
+    }
+  })
+  .catch(err => {
+    toast('Network error saving offer action', 'error');
+  });
+}
+
 // ── Offers: Accept ─────────────────────────────────────────────────
 document.querySelectorAll('.btn-accept').forEach(btn => {
   btn.addEventListener('click', () => {
     const card = btn.closest('.offer-card');
     const buyer = card.querySelector('.buyer-name').textContent;
-    card.classList.add('removing');
-    setTimeout(() => { card.remove(); updateOfferBadge(); }, 300);
-    toast(`Offer from ${buyer} accepted!`);
+    handleOfferAction(card, 'accept', null, null, `Offer from ${buyer} accepted!`, 'Failed to accept offer');
   });
 });
 
@@ -69,9 +103,8 @@ document.querySelectorAll('.btn-reject').forEach(btn => {
   btn.addEventListener('click', () => {
     const card = btn.closest('.offer-card');
     const buyer = card.querySelector('.buyer-name').textContent;
-    card.classList.add('removing');
-    setTimeout(() => { card.remove(); updateOfferBadge(); }, 300);
-    toast(`Offer from ${buyer} rejected`, 'warning');
+    if (!confirm(`Are you sure you want to reject this offer from ${buyer}?`)) return;
+    handleOfferAction(card, 'reject', null, null, `Offer from ${buyer} rejected`, 'Failed to reject offer');
   });
 });
 
@@ -88,16 +121,17 @@ document.querySelectorAll('.btn-counter').forEach(btn => {
     }
   });
 });
+
 document.querySelectorAll('.btn-send-counter').forEach(btn => {
   btn.addEventListener('click', () => {
-    const box = btn.closest('.counter-input-box');
-    const val = box.querySelector('input').value;
-    if (!val || isNaN(val) || val <= 0) { toast('Enter a valid price', 'error'); return; }
     const card = btn.closest('.offer-card');
+    const box = btn.closest('.counter-input-box');
+    const val = box.querySelector('.counter-price-val').value;
+    const msg = box.querySelector('.counter-msg-val').value;
+    if (!val || isNaN(val) || val <= 0) { toast('Enter a valid price', 'error'); return; }
+    
     const buyer = card.querySelector('.buyer-name').textContent;
-    card.classList.add('removing');
-    setTimeout(() => { card.remove(); updateOfferBadge(); }, 300);
-    toast(`Counter offer of ₹${val}/kg sent to ${buyer}`);
+    handleOfferAction(card, 'counter', val, msg, `Counter offer of ₹${val} sent to ${buyer}`, 'Failed to send counter offer');
   });
 });
 
