@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details | FarmLink</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1.85 5.5a7.03 7.03 0 0 1-13.3 3.65"/><path d="M14 15.5c.24.51.5 1.05.75 1.5"/><path d="M12 18s1.5 1.5 3 0"/></svg>
+                <span>FarmLink</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html">Marketplace</a>
+                <a href="map.html">Map</a>
+                <a href="wishlist.html">Wishlist</a>
+                <a href="orders.html">My Orders</a>
+                <a href="negotiations.html">My Negotiations</a>
+                <span id="auth-link"><a href="login.html">Sign In</a></span>
+                <a href="cart.html" class="cart-icon">🛒 Cart <span class="cart-badge" id="cart-badge">0</span></a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <div class="product-detail-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-top: 2rem; align-items: start;">
+            <!-- Left: Image & Badges -->
+            <div style="position: relative;">
+                <div id="p-badges" style="position: absolute; top: 20px; left: 20px; display: flex; gap: 10px; z-index: 10;"></div>
+                <img src="" id="p-image" style="width:100%; height:550px; object-fit:cover; border-radius:24px; box-shadow: var(--shadow); transition: transform 0.3s; cursor: crosshair;">
+                
+                <div style="margin-top: 2rem; padding: 2rem; background: var(--primary-pale); border-radius: 16px; border: 1px solid rgba(45, 106, 79, 0.1);">
+                    <h3 class="display-font" style="color: var(--primary); margin-bottom: 1rem; font-size: 1.5rem;">🚜 Meet Your Farmer</h3>
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700;" id="p-farmer-initial">F</div>
+                        <div>
+                            <div id="p-farmer-name" style="font-weight: 700; font-size: 1.2rem; color: var(--neutral-dark);">--</div>
+                            <div id="p-farmer-location" style="color: var(--neutral-mid); font-size: 0.95rem; margin-top: 4px;">--</div>
+                            <div id="p-farmer-rating" style="color: var(--accent); font-weight: 700; font-size: 0.9rem; margin-top: 4px;">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Details -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span id="p-category" style="color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;">Category</span>
+                </div>
+
+                <h1 id="p-name" class="display-font" style="font-size: 3.5rem; margin-bottom: 1rem; line-height: 1.1;">--</h1>
+                
+                <div style="display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem;">
+                    <div id="p-price" style="font-size:3rem; color:var(--primary); font-weight:700;">₹0<span style="font-size:1.2rem; color:var(--neutral-mid);">/kg</span></div>
+                    <div id="p-qty" style="background:#f3f4f6; padding:0.5rem 1rem; border-radius:8px; display:inline-block; font-weight: 700; color: var(--neutral-dark);">Stock Loading...</div>
+                </div>
+                
+                <h3 style="margin-bottom:1rem; font-size: 1.2rem;">About this yield</h3>
+                <p id="p-desc" style="color:var(--neutral-mid); font-size:1.15rem; line-height:1.8; margin-bottom:2.5rem;">--</p>
+                
+                <!-- Features Grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem;">
+                    <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                        <span style="font-size: 1.5rem;">🌱</span>
+                        <div>
+                            <div style="font-weight: 700;">Fresh Promise</div>
+                            <div style="font-size: 0.9rem; color: var(--neutral-mid);">Harvested and packed immediately to lock in freshness.</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                        <span style="font-size: 1.5rem;">🚚</span>
+                        <div>
+                            <div style="font-weight: 700;">Farm to Market</div>
+                            <div style="font-size: 0.9rem; color: var(--neutral-mid);">Direct delivery ensures max value for you and the farmer.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:1.5rem; align-items: center;">
+                    <button id="buy-btn" class="btn-auth" style="padding:1.2rem 2.5rem; font-size:1.2rem; flex: 1.5; box-shadow: 0 8px 20px rgba(45,106,79,0.3); transition: transform 0.2s;">Add to Cart 🛒</button>
+                    <button id="neg-btn" class="filter-chip" style="padding:1.2rem 2rem; font-size:1.1rem; border: 2px solid var(--primary); color:var(--primary); flex: 1; text-align: center; border-radius: 12px; font-weight: 700;">🤝 Negotiate</button>
+                </div>
+                
+                <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--neutral-mid);">
+                    🔒 Secure checkout protected by FarmLink
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Negotiation Modal -->
+    <div id="negotiate-modal" class="drawer-overlay">
+        <div class="auth-container">
+            <h2 class="display-font" style="margin-bottom:0.5rem">Negotiate Price</h2>
+            <p id="neg-product-name" style="font-weight:700; color:var(--primary); margin-bottom:1.5rem">--</p>
+            
+            <form onsubmit="submitNegotiation(event)">
+                <input type="hidden" id="neg-product-id">
+                <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem">
+                    <span style="font-size:14px; color:var(--neutral-mid)">Original Price:</span>
+                    <span id="neg-original-price" style="font-weight:700; text-decoration:line-through; color:#E25C5C">--</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Propose New Price (₹)</label>
+                    <input type="number" id="neg-price" class="input-field" placeholder="Enter your best offer" required>
+                </div>
+                <div class="form-group">
+                    <label>Message to Farmer</label>
+                    <textarea id="neg-message" class="input-field" placeholder="Why should the farmer accept this?" rows="3" required></textarea>
+                </div>
+                
+                <button type="submit" class="btn-auth">Send Negotiation Offer</button>
+                <button type="button" class="filter-chip" style="width:100%; margin-top:10px" onclick="document.getElementById('negotiate-modal').style.display='none'">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProductDetail();
+        });
+    </script>
+</body>
+</html>
