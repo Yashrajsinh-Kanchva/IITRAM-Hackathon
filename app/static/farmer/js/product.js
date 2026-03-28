@@ -80,6 +80,114 @@ function removeImage() {
 // ─── Validation ───────────────────────────────────────────────────────────────
 function clr(id) { const e = document.getElementById(id); if (e) e.textContent = ""; }
 function setErr(id, msg) { const e = document.getElementById(id); if (e) e.textContent = msg; }
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatInr(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n)
+    ? n.toLocaleString("en-IN", { maximumFractionDigits: 2 })
+    : "0";
+}
+
+function renderMarketPriceHint(data, requestedCrop) {
+  const box = document.getElementById("marketPriceAssist");
+  if (!box) return;
+
+  if (!data) {
+    box.className = "market-price-assist";
+    box.innerHTML = "";
+    return;
+  }
+
+  if (data.loading) {
+    box.className = "market-price-assist show loading";
+    box.innerHTML = `<div class="mp-line">Checking current market price...</div>`;
+    return;
+  }
+
+  if (!data.success) {
+    box.className = "market-price-assist show";
+    box.innerHTML = `<div class="mp-line">Could not fetch market price right now.</div>`;
+    return;
+  }
+
+  if (!data.has_data) {
+    box.className = "market-price-assist show";
+    box.innerHTML = `
+      <div class="mp-title">Market Price</div>
+      <div class="mp-line">No recent data found for "${escapeHtml(requestedCrop)}".</div>
+      <div class="mp-meta">Try a more specific crop name like "Tomato" or "Wheat".</div>
+    `;
+    return;
+  }
+
+  box.className = "market-price-assist show";
+  box.innerHTML = `
+    <div class="mp-title">Current Market Price (Estimate)</div>
+    <div class="mp-line">₹${formatInr(data.suggested_price)} per ${escapeHtml(data.unit_hint || "kg")}</div>
+    <div class="mp-meta">Range: ₹${formatInr(data.min_price)} - ₹${formatInr(data.max_price)} · ${data.sample_size} recent listings</div>
+    <div class="mp-actions">
+      <button type="button" class="mp-btn" id="applyMarketPriceBtn">Use this price</button>
+      <span class="mp-meta">${escapeHtml(data.message || "")}</span>
+    </div>
+  `;
+
+  document.getElementById("applyMarketPriceBtn")?.addEventListener("click", () => {
+    setPriceType("fixed");
+    const priceInput = document.getElementById("price");
+    if (priceInput) {
+      priceInput.value = String(data.suggested_price || "");
+      priceInput.focus();
+      priceInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+}
+
+let marketPriceDebounceTimer = null;
+let marketPriceRequestSeq = 0;
+
+async function fetchMarketPriceHint(cropName) {
+  const requestedCrop = String(cropName || "").trim();
+  if (requestedCrop.length < 2) {
+    renderMarketPriceHint(null);
+    return;
+  }
+
+  const requestId = ++marketPriceRequestSeq;
+  renderMarketPriceHint({ loading: true });
+
+  try {
+    const res = await fetch(`/farmer/api/market-price?crop_name=${encodeURIComponent(requestedCrop)}`);
+    const data = await res.json();
+    if (requestId !== marketPriceRequestSeq) return;
+    renderMarketPriceHint(data, requestedCrop);
+  } catch (err) {
+    if (requestId !== marketPriceRequestSeq) return;
+    renderMarketPriceHint({ success: false }, requestedCrop);
+  }
+}
+
+document.getElementById("cropName")?.addEventListener("input", (event) => {
+  const value = event.target.value || "";
+  window.clearTimeout(marketPriceDebounceTimer);
+  marketPriceDebounceTimer = window.setTimeout(() => {
+    fetchMarketPriceHint(value);
+  }, 350);
+});
+
+document.getElementById("cropName")?.addEventListener("blur", (event) => {
+  const value = event.target.value || "";
+  if (String(value).trim().length >= 2) {
+    fetchMarketPriceHint(value);
+  }
+});
 
 function validate() {
   let ok = true;

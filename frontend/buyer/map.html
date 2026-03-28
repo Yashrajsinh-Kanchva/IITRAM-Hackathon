@@ -3,62 +3,586 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Map | FarmLink</title>
+    <title>Product Map | Krishi Connect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
     <style>
-        #map {
-            height: 70vh;
+        .map-page-head {
+            margin-bottom: 1rem;
+        }
+        .map-page-head h1 {
+            line-height: 1.15;
+            margin-bottom: 0.6rem;
+        }
+        .map-page-head p {
+            color: var(--neutral-mid);
+        }
+        .map-filter-bar {
+            margin-bottom: 1rem;
+            border-radius: 14px;
+            border: 1px solid #dbe8de;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+            padding: 0.9rem;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        }
+        .map-filter-grid {
+            display: grid;
+            grid-template-columns: minmax(170px, 220px) minmax(280px, 1fr) auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+        .map-filter-group {
+            min-width: 0;
+        }
+        .map-filter-label {
+            display: block;
+            margin-bottom: 0.35rem;
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+        .map-input {
             width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            padding: 0.58rem 0.7rem;
+            font-size: 14px;
+            color: #0f172a;
+            outline: none;
+        }
+        .map-input:focus {
+            border-color: #166534;
+            box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.12);
+        }
+        .map-range-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.55rem;
+        }
+        .map-range-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid #dbe3ec;
+            border-radius: 10px;
+            background: #fff;
+            padding: 0.5rem 0.6rem;
+        }
+        .map-range-wrap span {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 700;
+            min-width: 28px;
+        }
+        .map-range {
+            width: 100%;
+            accent-color: #166534;
+        }
+        .map-price-readout {
+            margin-top: 0.3rem;
+            font-size: 12px;
+            color: #334155;
+            font-weight: 600;
+        }
+        .map-filter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+        .map-btn {
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 0.56rem 0.9rem;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .map-btn-primary {
+            background: #166534;
+            color: #fff;
+        }
+        .map-btn-primary:hover {
+            background: #14532d;
+        }
+        .map-btn-secondary {
+            border-color: #166534;
+            color: #166534;
+            background: #f0fdf4;
+        }
+        .map-btn-secondary:hover {
+            background: #dcfce7;
+        }
+        .map-btn-light {
+            border-color: #cbd5e1;
+            color: #334155;
+            background: #fff;
+        }
+        .map-btn-light:hover {
+            background: #f8fafc;
+        }
+        .map-shell {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+            height: clamp(520px, 72vh, 760px);
+            min-height: 520px;
             border-radius: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
+            border: 1px solid #d9e3db;
+            box-shadow: 0 10px 26px rgba(22, 101, 52, 0.08);
+            background: #ffffff;
+            overflow: hidden;
+        }
+        .map-shell.sidebar-collapsed {
+            grid-template-columns: 0 minmax(0, 1fr);
+        }
+        #map {
+            height: 100%;
+            width: 100%;
             z-index: 1;
         }
-        .map-container {
-            margin-top: 2rem;
-            position: relative;
+        .map-loading {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(2px);
+            z-index: 1100;
+        }
+        .map-loading.show {
+            display: flex;
+        }
+        .map-sidebar {
+            width: 100%;
+            max-width: none;
+            height: 100%;
+            border-right: 1px solid #d9e3db;
+            background: #f8fbf9;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 1150;
+            transition: transform 0.3s ease;
+        }
+        .map-sidebar.closed-desktop {
+            transform: translateX(-102%);
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 320px;
+        }
+        #map-sidebar-list {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.7rem;
+            display: grid;
+            gap: 0.55rem;
+            align-content: start;
+        }
+        .map-product-card {
+            width: 100%;
+            border: 1px solid #d8e6db;
+            border-radius: 12px;
+            background: #fff;
+            padding: 0.62rem 0.66rem;
+            text-align: left;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+        }
+        .map-product-card:hover {
+            border-color: #74b28d;
+            box-shadow: 0 6px 15px rgba(22, 101, 52, 0.12);
+        }
+        .map-product-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.45rem;
+            align-items: flex-start;
+            margin-bottom: 0.28rem;
+        }
+        .map-product-name {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.2;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .map-product-farmer {
+            margin: 0;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .map-product-badge {
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
+        .map-product-badge.vegetable { background: #dcfce7; color: #166534; }
+        .map-product-badge.fruit { background: #ffedd5; color: #c2410c; }
+        .map-product-badge.grain { background: #fef9c3; color: #a16207; }
+        .map-product-badge.other { background: #e2e8f0; color: #475569; }
+        .map-product-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-top: 0.38rem;
+            font-size: 13px;
+            color: #334155;
+            font-weight: 600;
+        }
+        .map-sidebar-toggle {
+            position: absolute;
+            top: 12px;
+            left: 332px;
+            z-index: 1200;
+            border: 1px solid #166534;
+            border-radius: 10px;
+            background: #166534;
+            color: #fff;
+            padding: 0.5rem 0.7rem;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.18);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .map-sidebar-toggle:hover {
+            background: #14532d;
+        }
+        .map-shell.sidebar-collapsed .map-sidebar-toggle {
+            left: 12px;
         }
         .leaflet-popup-content-wrapper {
-            border-radius: 12px;
-            padding: 5px;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2) !important;
+            border: 1px solid #dce9df;
+            padding: 0 !important;
         }
-        .leaflet-popup-content b {
-            color: var(--primary);
-            font-size: 1.1rem;
+        .leaflet-popup-content {
+            margin: 0 !important;
+            width: 300px !important;
         }
-        .nav-links a.active {
-            color: var(--accent) !important;
+        .kc-marker {
+            position: relative;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .kc-marker-ping {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 999px;
+            opacity: 0.32;
+            animation: kcPulse 1.8s infinite ease-out;
+        }
+        .kc-marker-core {
+            position: relative;
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            font-size: 14px;
             font-weight: 700;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28);
+        }
+        .kc-marker.vegetable .kc-marker-core,
+        .kc-marker.vegetable .kc-marker-ping {
+            background: #16a34a;
+        }
+        .kc-marker.fruit .kc-marker-core,
+        .kc-marker.fruit .kc-marker-ping {
+            background: #f97316;
+        }
+        .kc-marker.grain .kc-marker-core,
+        .kc-marker.grain .kc-marker-ping {
+            background: #eab308;
+        }
+        .kc-marker.other .kc-marker-core,
+        .kc-marker.other .kc-marker-ping {
+            background: #166534;
+        }
+        .kc-cluster {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 3px solid #dcfce7;
+            background: #166534;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            box-shadow: 0 6px 14px rgba(22, 101, 52, 0.35);
+        }
+        .kc-legend {
+            background: #ffffff;
+            border: 1px solid #d9e3db;
+            border-radius: 10px;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+            padding: 10px 12px;
+            line-height: 1.35;
+            font-size: 12px;
+            color: #0f172a;
+        }
+        .kc-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .kc-dot.veg { background: #16a34a; }
+        .kc-dot.fruit { background: #f97316; }
+        .kc-dot.grain { background: #eab308; }
+        .kc-popup-card {
+            display: flex;
+            gap: 0.68rem;
+            align-items: flex-start;
+            padding: 0.7rem;
+            background: #ffffff;
+        }
+        .kc-popup-thumb {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid #dbe7dc;
+            flex-shrink: 0;
+        }
+        .kc-popup-body {
+            padding: 0;
+            min-width: 0;
+        }
+        .kc-popup-category {
+            margin-bottom: 0.22rem;
+            color: #166534;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .kc-popup-title {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.25;
+            color: #0f172a;
+            font-weight: 700;
+        }
+        .kc-popup-subtitle {
+            margin-top: 0.25rem;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .kc-popup-meta {
+            margin-top: 0.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+        }
+        .kc-popup-meta > div {
+            border-radius: 8px;
+            font-size: 12px;
+            padding: 0.25rem 0.4rem;
+        }
+        .kc-popup-meta-price {
+            background: #ecfdf5;
+            color: #14532d;
+            font-weight: 700;
+        }
+        .kc-popup-meta-stock {
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+        }
+        .kc-popup-actions {
+            margin-top: 0.62rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .kc-popup-btn {
+            border: none;
+            border-radius: 8px;
+            background: #166534;
+            color: #fff;
+            padding: 0.42rem 0.62rem;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .kc-popup-link {
+            color: #166534;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .kc-popup-link:hover {
+            text-decoration: underline;
+        }
+        @keyframes kcPulse {
+            0% { transform: scale(0.7); opacity: 0.35; }
+            70% { transform: scale(1.35); opacity: 0; }
+            100% { transform: scale(1.35); opacity: 0; }
+        }
+        @media (max-width: 1024px) {
+            .map-filter-grid {
+                grid-template-columns: 1fr;
+            }
+            .map-filter-actions {
+                justify-content: flex-start;
+            }
+            .map-shell {
+                grid-template-columns: minmax(250px, 280px) minmax(0, 1fr);
+            }
+            .map-sidebar.closed-desktop {
+                width: 280px;
+            }
+            .map-sidebar-toggle {
+                left: 292px;
+            }
+            .map-shell.sidebar-collapsed .map-sidebar-toggle {
+                left: 12px;
+            }
+        }
+        @media (max-width: 767px) {
+            .map-page-head h1 {
+                font-size: 2rem !important;
+            }
+            .map-shell {
+                display: block;
+                height: calc(100vh - 210px);
+                min-height: 70vh;
+                border-radius: 12px;
+            }
+            #map {
+                height: 100%;
+            }
+            .map-sidebar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 56vh;
+                width: 100%;
+                max-width: 100%;
+                border-right: none;
+                border-top: 1px solid #d9e3db;
+                border-top-left-radius: 16px;
+                border-top-right-radius: 16px;
+                box-shadow: 0 -12px 24px rgba(15, 23, 42, 0.22);
+                max-height: 65vh;
+            }
+            .map-sidebar.mobile-hidden {
+                transform: translateY(102%);
+            }
+            .map-sidebar.mobile-open {
+                transform: translateY(0);
+            }
+            .map-sidebar-toggle {
+                top: 8px;
+                left: 8px;
+            }
+            .map-filter-bar {
+                padding: 0.75rem;
+            }
+            .map-range-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body style="background: var(--neutral-light)">
 
-    <header>
-        <div class="nav-container">
-            <a href="index.html" class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                <span>FarmLink</span>
-            </a>
-            <nav class="nav-links">
-                <a href="index.html">Marketplace</a>
-                <a href="map.html" class="active">Map</a>
-                <a href="wishlist.html">Wishlist</a>
-                <a href="orders.html">My Orders</a>
-                <a href="negotiations.html">My Negotiations</a>
-                <span id="auth-link"><a href="login.html">Sign In</a></span>
-                <a href="cart.html" class="cart-icon">🛒 Cart <span class="cart-badge" id="cart-badge">0</span></a>
-            </nav>
-        </div>
-    </header>
+    <header></header>
 
     <main class="container">
-        <h1 class="display-font" style="font-size: 2.5rem; margin-bottom: 1rem">Agricultural Sourcing Map</h1>
-        <p style="color:var(--neutral-mid); margin-bottom: 2rem">Visualize where your fresh produce is coming from. Click on markers to see product details.</p>
-        
-        <div class="map-container">
+        <section class="map-page-head">
+            <h1 class="display-font" style="font-size: 2.5rem;">Agricultural Sourcing Map</h1>
+            <p>Visualize where your fresh produce is coming from. Click on markers to see product details.</p>
+        </section>
+
+        <section class="map-filter-bar">
+            <div class="map-filter-grid">
+                <div class="map-filter-group">
+                    <label class="map-filter-label" for="map-filter-category">Crop Type</label>
+                    <select id="map-filter-category" class="map-input">
+                        <option value="all">All Crop Types</option>
+                        <option value="vegetable">Vegetables</option>
+                        <option value="fruit">Fruits</option>
+                        <option value="grain">Grains</option>
+                    </select>
+                </div>
+
+                <div class="map-filter-group">
+                    <label class="map-filter-label">Price Range (₹/kg)</label>
+                    <div class="map-range-grid">
+                        <div class="map-range-wrap">
+                            <span>Min</span>
+                            <input id="map-price-min" type="range" min="0" max="10000" step="10" value="0" class="map-range">
+                        </div>
+                        <div class="map-range-wrap">
+                            <span>Max</span>
+                            <input id="map-price-max" type="range" min="0" max="10000" step="10" value="10000" class="map-range">
+                        </div>
+                    </div>
+                    <p class="map-price-readout"><span id="map-price-min-label">₹0</span> - <span id="map-price-max-label">₹10000</span></p>
+                </div>
+
+                <div class="map-filter-actions">
+                    <button id="map-near-me-btn" class="map-btn map-btn-primary">Near Me</button>
+                    <button id="map-recenter-btn" class="map-btn map-btn-secondary">Recenter</button>
+                    <button id="map-reset-filters-btn" class="map-btn map-btn-light">Reset</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="map-shell">
+            <button id="map-sidebar-toggle" class="map-sidebar-toggle rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-800">☰ Products</button>
+
+            <aside id="map-sidebar" class="map-sidebar">
+                <div class="sticky top-0 z-10 border-b border-emerald-100 bg-white px-4 py-3">
+                    <h3 class="text-sm font-semibold text-emerald-800">Products On Map</h3>
+                    <p id="map-sidebar-count" class="text-xs text-slate-500">0 items</p>
+                </div>
+                <div id="map-sidebar-list"></div>
+            </aside>
+
+            <div id="map-loading" class="map-loading">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="h-10 w-10 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-700"></div>
+                    <p class="text-sm font-medium text-emerald-800">Loading product markers...</p>
+                </div>
+            </div>
+
             <div id="map"></div>
         </div>
     </main>
@@ -67,7 +591,10 @@
     
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="js/app.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="js/imageMapper.js?v=20260328f"></script>
+    <script src="js/navbar.js?v=20260328g"></script>
+    <script src="js/app.js?v=20260328g"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             initMapView();

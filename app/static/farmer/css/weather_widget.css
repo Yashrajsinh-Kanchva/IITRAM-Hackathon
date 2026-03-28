@@ -1,0 +1,601 @@
+/* Weather + AI widget for farmer new dashboard */
+.weather-ai-section {
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-icon {
+  width: 28px;
+  height: 28px;
+  color: #166534;
+  background: #dcfce7;
+  padding: 6px;
+  border-radius: 10px;
+  box-sizing: content-box;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #14532d;
+  margin: 0;
+}
+
+.section-sub {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+
+.location-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(220, 252, 231, 0.7);
+  border: 1px solid #bbf7d0;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #166534;
+  backdrop-filter: blur(8px);
+}
+
+.location-badge i {
+  width: 13px;
+  height: 13px;
+}
+
+.weather-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #dcfce7;
+  border-top-color: #166534;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.weather-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.weather-error i {
+  width: 32px;
+  height: 32px;
+  color: #ef4444;
+}
+
+.weather-error button {
+  background: #166534;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.current-weather-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #14532d 0%, #166534 55%, #15803d 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 16px;
+  color: white;
+  gap: 24px;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.current-weather-card::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: rgba(74, 222, 128, 0.08);
+  border-radius: 50%;
+}
+
+.cw-left {
+  flex: 1;
+  min-width: 200px;
+}
+
+.cw-temp {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: white;
+}
+
+.cw-condition {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 6px 0 2px;
+}
+
+.cw-location {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 16px;
+}
+
+.cw-meta {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.cw-meta span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cw-meta i {
+  width: 13px;
+  height: 13px;
+}
+
+.cw-updated {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 14px;
+}
+
+.cw-updated i {
+  width: 11px;
+  height: 11px;
+}
+
+.cw-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.cw-icon-wrap {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cw-icon-wrap i {
+  width: 44px;
+  height: 44px;
+  color: #fde68a;
+}
+
+.soil-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 160px;
+}
+
+.soil-selector label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.soil-selector select {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: white;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+.soil-selector select:focus {
+  border-color: #4ade80;
+}
+
+.soil-selector select option {
+  background: #166534;
+  color: white;
+}
+
+.forecast-strip {
+  margin-bottom: 16px;
+}
+
+.forecast-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.forecast-label i {
+  width: 14px;
+  height: 14px;
+}
+
+.forecast-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.forecast-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.forecast-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.12);
+}
+
+.fc-day {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fc-date {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin-bottom: 10px;
+}
+
+.fc-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.fc-icon i {
+  width: 28px;
+  height: 28px;
+}
+
+.fc-temp {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #14532d;
+}
+
+.fc-cond {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.fc-rain {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: #0891b2;
+  background: #e0f2fe;
+  border-radius: 20px;
+  padding: 3px 8px;
+  margin-top: 8px;
+}
+
+.fc-rain i {
+  width: 10px;
+  height: 10px;
+}
+
+.ai-panel {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(34, 197, 94, 0.18);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(20, 83, 45, 0.08);
+}
+
+.ai-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: linear-gradient(90deg, #f0fdf4, #dcfce7);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.12);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.ai-title-row i {
+  width: 20px;
+  height: 20px;
+  color: #166534;
+}
+
+.ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #166534;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.ai-badge i {
+  width: 12px;
+  height: 12px;
+}
+
+.ai-loading-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #166534;
+  font-weight: 500;
+}
+
+.ai-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #dcfce7;
+  border-top-color: #166534;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.suggestion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0;
+}
+
+.suggestion-card {
+  padding: 20px 24px;
+  border-right: 1px solid rgba(34, 197, 94, 0.1);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+  transition: background 0.2s ease;
+  animation: fadeUp 0.4s ease;
+}
+
+.suggestion-card:hover {
+  background: rgba(240, 253, 244, 0.8);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sc-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sc-icon i {
+  width: 17px;
+  height: 17px;
+}
+
+.sc-icon.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.sc-icon.blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sc-icon.amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.sc-icon.red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.sc-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #374151;
+}
+
+.sc-body {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #14532d;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.sc-detail {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.sc-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: #991b1b;
+  margin: 12px 16px;
+  grid-column: 1 / -1;
+}
+
+.sc-warning i {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+@media (max-width: 768px) {
+  .current-weather-card {
+    padding: 20px;
+  }
+
+  .cw-temp {
+    font-size: 2.5rem;
+  }
+
+  .cw-right {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .forecast-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .forecast-card {
+    padding: 12px 8px;
+  }
+
+  .ai-panel-header {
+    padding: 14px 16px;
+  }
+
+  .suggestion-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .forecast-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .soil-selector {
+    width: 100%;
+  }
+}
+

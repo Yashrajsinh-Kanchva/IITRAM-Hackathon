@@ -14,6 +14,11 @@ class Config:
         "MONGODB_URI",
         os.getenv("MONGO_URI", "mongodb://localhost:27017/farm_to_market"),
     )
+    MONGO_FALLBACK_URI = os.getenv("MONGO_FALLBACK_URI", "").strip()
+    MONGO_CONNECT_RETRIES = int(os.getenv("MONGO_CONNECT_RETRIES", "2"))
+    MONGO_SERVER_SELECTION_TIMEOUT_MS = int(
+        os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "8000")
+    )
     DATABASE_NAME = os.getenv("DATABASE_NAME", "farm_to_market")
     DEBUG = _as_bool(os.getenv("FLASK_DEBUG"), False)
     TESTING = False

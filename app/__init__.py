@@ -1,8 +1,10 @@
+import time
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 
 from app.admin.routes import admin_bp
 from app.buyer import BUYER_BLUEPRINTS
@@ -27,6 +29,50 @@ def _resolve_db_name(app):
     return name_from_uri or "farm_to_market"
 
 
+def _connect_mongo_with_retry(app):
+    explicit_client = app.config.get("MONGO_CLIENT")
+    if explicit_client is not None:
+        return explicit_client
+
+    retries = max(1, int(app.config.get("MONGO_CONNECT_RETRIES", 2)))
+    timeout_ms = max(1000, int(app.config.get("MONGO_SERVER_SELECTION_TIMEOUT_MS", 8000)))
+    primary_uri = app.config["MONGO_URI"]
+    fallback_uri = (app.config.get("MONGO_FALLBACK_URI") or "").strip()
+    targets = [("primary", primary_uri)]
+    if fallback_uri and fallback_uri != primary_uri:
+        targets.append(("fallback", fallback_uri))
+
+    errors = []
+    for label, uri in targets:
+        for attempt in range(1, retries + 1):
+            try:
+                client = MongoClient(
+                    uri,
+                    serverSelectionTimeoutMS=timeout_ms,
+                    connectTimeoutMS=timeout_ms,
+                    socketTimeoutMS=timeout_ms,
+                )
+                client.admin.command("ping")
+                if label == "fallback":
+                    app.logger.warning(
+                        "Connected using MONGO_FALLBACK_URI because primary MONGO_URI failed."
+                    )
+                return client
+            except PyMongoError as exc:
+                errors.append(f"{label} attempt {attempt}/{retries}: {exc}")
+                if attempt < retries:
+                    time.sleep(min(1.2 * attempt, 3.0))
+
+    hint = (
+        "MongoDB connection failed. Check DNS/network access to Atlas, verify IP allowlist, "
+        "or set MONGO_FALLBACK_URI (for example mongodb://127.0.0.1:27017/farm_to_market). "
+        "You can also retry after a few seconds when SRV DNS fails intermittently."
+    )
+    if errors:
+        hint = f"{hint}\nLast error: {errors[-1]}"
+    raise RuntimeError(hint)
+
+
 def create_app(config_name=None, test_config=None):
     app = Flask(__name__)
 
@@ -41,7 +87,7 @@ def create_app(config_name=None, test_config=None):
 
     csrf.init_app(app)
 
-    mongo_client = app.config.get("MONGO_CLIENT") or MongoClient(app.config["MONGO_URI"])
+    mongo_client = _connect_mongo_with_retry(app)
     app.mongo_client = mongo_client
     app.db = mongo_client[_resolve_db_name(app)]
 

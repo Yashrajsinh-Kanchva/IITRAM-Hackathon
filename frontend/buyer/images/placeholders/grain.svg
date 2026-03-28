@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff6d9"/>
+      <stop offset="100%" stop-color="#f5e2a9"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <path d="M0 600 L0 450 C120 380, 210 430, 320 390 C450 345, 600 430, 800 360 L800 600 Z" fill="#e0b964"/>
+  <g fill="#c8963c">
+    <ellipse cx="190" cy="330" rx="22" ry="70"/>
+    <ellipse cx="240" cy="318" rx="22" ry="70"/>
+    <ellipse cx="290" cy="334" rx="22" ry="70"/>
+    <ellipse cx="500" cy="316" rx="22" ry="70"/>
+    <ellipse cx="550" cy="328" rx="22" ry="70"/>
+    <ellipse cx="600" cy="314" rx="22" ry="70"/>
+  </g>
+  <text x="34" y="560" fill="#7f5a1d" font-size="40" font-family="Arial, sans-serif" font-weight="700">Premium Grains</text>
+</svg>

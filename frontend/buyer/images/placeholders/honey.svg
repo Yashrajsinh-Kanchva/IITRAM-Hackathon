@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff7de"/>
+      <stop offset="100%" stop-color="#ffe3a1"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="250" y="220" width="300" height="250" rx="24" fill="#f5c04f"/>
+  <rect x="268" y="196" width="264" height="44" rx="16" fill="#9e6a3b"/>
+  <ellipse cx="400" cy="315" rx="86" ry="86" fill="#ffd067" opacity="0.7"/>
+  <path d="M390 240 C440 270, 470 320, 450 390 C430 460, 360 470, 334 410 C320 378, 334 338, 364 318 C378 308, 390 294, 390 240 Z" fill="#e09b23"/>
+  <circle cx="610" cy="190" r="22" fill="#1f1f1f"/>
+  <ellipse cx="585" cy="190" rx="20" ry="14" fill="#f0c83f"/>
+  <ellipse cx="635" cy="190" rx="20" ry="14" fill="#f0c83f"/>
+  <text x="34" y="560" fill="#865114" font-size="40" font-family="Arial, sans-serif" font-weight="700">Raw Forest Honey</text>
+</svg>

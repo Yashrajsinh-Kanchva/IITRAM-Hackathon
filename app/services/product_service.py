@@ -12,6 +12,7 @@ class ProductService:
         self.page_size = page_size
 
     def list_products(self, query_args):
+        self._ensure_identity_fields_for_missing()
         self._ensure_quality_scores_for_missing()
         pagination = parse_pagination(query_args, default_page_size=self.page_size)
         filters = {
@@ -57,6 +58,7 @@ class ProductService:
         return updated
 
     def quality_summary(self):
+        self._ensure_identity_fields_for_missing()
         self._ensure_quality_scores_for_missing()
         excellent = 0
         good = 0
@@ -88,6 +90,99 @@ class ProductService:
         for doc in cursor:
             score = compute_quality_score(doc)
             self.product_repo.update_quality_score(str(doc["_id"]), score)
+
+    @staticmethod
+    def _infer_category_from_text(value):
+        text = str(value or "").strip().lower()
+        if not text:
+            return "crop"
+        if any(token in text for token in ("honey", "madhu")):
+            return "honey"
+        if any(
+            token in text
+            for token in ("milk", "dairy", "paneer", "curd", "ghee", "butter", "cheese", "yogurt")
+        ):
+            return "dairy"
+        if any(
+            token in text
+            for token in (
+                "mango",
+                "banana",
+                "apple",
+                "orange",
+                "grape",
+                "papaya",
+                "guava",
+                "pomegranate",
+                "fruit",
+            )
+        ):
+            return "fruit"
+        if any(
+            token in text
+            for token in ("wheat", "rice", "maize", "grain", "millet", "barley", "bajra", "jowar")
+        ):
+            return "grain"
+        if any(
+            token in text
+            for token in (
+                "tomato",
+                "onion",
+                "potato",
+                "brinjal",
+                "eggplant",
+                "cabbage",
+                "carrot",
+                "cauliflower",
+                "peas",
+                "spinach",
+                "okra",
+                "vegetable",
+            )
+        ):
+            return "vegetable"
+        if any(token in text for token in ("chickpea", "lentil", "gram", "pulse", "toor", "dal")):
+            return "pulse"
+        if any(token in text for token in ("cumin", "turmeric", "coriander", "chili", "fenugreek", "spice")):
+            return "spice"
+        if "cotton" in text:
+            return "fiber"
+        return "crop"
+
+    def _ensure_identity_fields_for_missing(self):
+        missing_query = {
+            "$or": [
+                {"name": {"$exists": False}},
+                {"name": None},
+                {"name": ""},
+                {"category": {"$exists": False}},
+                {"category": None},
+                {"category": ""},
+            ]
+        }
+        cursor = self.product_repo.collection.find(missing_query)
+        for doc in cursor:
+            current_name = str(doc.get("name") or "").strip()
+            crop_name = str(doc.get("crop_name") or "").strip()
+            current_category = str(doc.get("category") or "").strip().lower()
+
+            patch = {}
+            if not current_name:
+                patch["name"] = crop_name or "Farm Produce"
+
+            if not current_category:
+                source = " ".join(
+                    [
+                        crop_name,
+                        str(doc.get("description") or "").strip(),
+                        str(doc.get("name") or "").strip(),
+                    ]
+                )
+                patch["category"] = self._infer_category_from_text(source)
+
+            if patch:
+                patch["updated_at"] = doc.get("updated_at") or doc.get("created_at")
+                self.product_repo.collection.update_one({"_id": doc["_id"]}, {"$set": patch})
 
     def bulk_action(self, ids, action, admin_id):
         action_to_status = {

@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from typing import Any
 
 from bson import ObjectId
@@ -7,15 +8,189 @@ from flask import current_app
 from app.utils.time_utils import utcnow
 
 
-DEFAULT_PRODUCT_IMAGE = (
-    "https://images.unsplash.com/photo-1592841200221-a6898f307bac?q=80&w=400"
-)
+DEFAULT_PRODUCT_IMAGE = "/buyer/images/placeholders/farm-default.jpg"
+
+CATEGORY_IMAGE_FALLBACKS = {
+    "vegetable": "/buyer/images/placeholders/vegetables-default.jpg",
+    "fruit": "/buyer/images/placeholders/fruits-default.jpg",
+    "grain": "/buyer/images/placeholders/grains-default.jpg",
+    "pulse": "/buyer/images/placeholders/pulses-default.jpg",
+    "spice": "/buyer/images/placeholders/spices-default.jpg",
+    "cash_crop": "/buyer/images/placeholders/farm-default.jpg",
+    "honey": "/buyer/images/placeholders/farm-default.jpg",
+    "dairy": "/buyer/images/placeholders/farm-default.jpg",
+    "farm": DEFAULT_PRODUCT_IMAGE,
+}
 
 CATEGORY_ALIASES = {
     "vegetables": "vegetable",
     "fruits": "fruit",
     "grains": "grain",
+    "grain": "grain",
+    "cereals": "grain",
+    "cereal": "grain",
+    "pulses": "pulse",
+    "pulse": "pulse",
+    "dal": "pulse",
+    "lentils": "pulse",
+    "spices": "spice",
+    "spice": "spice",
+    "cash crop": "cash_crop",
+    "cash-crop": "cash_crop",
+    "cashcrop": "cash_crop",
 }
+
+CROP_QUERY_MAP = {
+    "tomato": "tomato,vegetable,farm",
+    "potato": "potato,vegetable,farm",
+    "onion": "onion,vegetable,farm",
+    "brinjal": "brinjal,eggplant,farm",
+    "cauliflower": "cauliflower,vegetable,farm",
+    "cabbage": "cabbage,vegetable,farm",
+    "carrot": "carrot,vegetable,farm",
+    "spinach": "spinach,leafy,vegetable",
+    "peas": "green peas,vegetable,farm",
+    "cucumber": "cucumber,vegetable,farm",
+    "bitter gourd": "bitter gourd,vegetable,farm",
+    "bottle gourd": "bottle gourd,vegetable,farm",
+    "capsicum": "capsicum,bell pepper,vegetable",
+    "garlic": "garlic,vegetable,farm",
+    "ginger": "ginger,root,farm",
+    "okra": "okra,ladyfinger,farm",
+    "radish": "radish,vegetable,farm",
+    "beetroot": "beetroot,vegetable,farm",
+    "mango": "mango,fruit,farm",
+    "banana": "banana,fruit,farm",
+    "apple": "apple,fruit,farm",
+    "grapes": "grapes,fruit,farm",
+    "watermelon": "watermelon,fruit,farm",
+    "papaya": "papaya,fruit,farm",
+    "pomegranate": "pomegranate,fruit,farm",
+    "guava": "guava,fruit,farm",
+    "lemon": "lemon,citrus,fruit",
+    "orange": "orange,citrus,fruit",
+    "pineapple": "pineapple,fruit,farm",
+    "strawberry": "strawberry,fruit,farm",
+    "coconut": "coconut,farm,fruit",
+    "chikoo": "chikoo,sapota,fruit",
+    "wheat": "wheat,grain,field",
+    "rice": "rice,paddy,grain,field",
+    "barley": "barley,grain,field",
+    "maize": "maize,corn,grain,field",
+    "corn": "corn,maize,grain,field",
+    "jowar": "jowar,sorghum,grain",
+    "bajra": "bajra,pearl millet,grain",
+    "ragi": "ragi,finger millet,grain",
+    "oats": "oats,grain,field",
+    "lentils": "lentils,dal,pulses",
+    "chickpeas": "chickpeas,chana,pulses",
+    "moong": "moong,green gram,pulses",
+    "urad": "urad,black gram,pulses",
+    "toor": "toor dal,pigeon pea,pulses",
+    "rajma": "rajma,kidney beans,pulses",
+    "soybean": "soybean,pulses,farm",
+    "turmeric": "turmeric,spice,farm",
+    "chilli": "red chilli,spice,farm",
+    "coriander": "coriander,spice,seed",
+    "cumin": "cumin,jeera,spice",
+    "pepper": "black pepper,spice",
+    "cardamom": "cardamom,elaichi,spice",
+    "mustard": "mustard,spice,seed",
+    "fenugreek": "fenugreek,methi,spice",
+    "cotton": "cotton,cash crop,farm",
+    "sugarcane": "sugarcane,cash crop,farm",
+    "groundnut": "groundnut,peanut,crop",
+    "sunflower": "sunflower,cash crop,farm",
+    "jute": "jute,cash crop,farm",
+}
+
+CROP_ALIASES = {
+    "tomatoes": "tomato",
+    "onions": "onion",
+    "potatoes": "potato",
+    "eggplant": "brinjal",
+    "aubergine": "brinjal",
+    "ladyfinger": "okra",
+    "lady finger": "okra",
+    "bhindi": "okra",
+    "lauki": "bottle gourd",
+    "karela": "bitter gourd",
+    "chili": "chilli",
+    "chilies": "chilli",
+    "chillies": "chilli",
+    "dal": "lentils",
+    "chana": "chickpeas",
+    "kabuli chana": "chickpeas",
+    "chick pea": "chickpeas",
+    "chick peas": "chickpeas",
+    "arhar": "toor",
+    "toor dal": "toor",
+    "pigeon pea": "toor",
+    "masoor": "lentils",
+    "red lentil": "lentils",
+    "black gram": "urad",
+    "green gram": "moong",
+    "kidney beans": "rajma",
+    "jeera": "cumin",
+    "methi": "fenugreek",
+    "sapota": "chikoo",
+    "sorghum": "jowar",
+    "finger millet": "ragi",
+    "sweet corn": "maize",
+    "peanut": "groundnut",
+    "peanuts": "groundnut",
+}
+
+
+def _normalize_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", str(value or "").lower())).strip()
+
+
+def _make_unsplash_url(query: str) -> str:
+    clean = str(query or "").replace(" ", "+").strip("+")
+    if not clean:
+        clean = "farm,produce,agriculture"
+    return f"https://source.unsplash.com/400x300/?{clean}"
+
+
+def _canonical_crop(crop_name: Any) -> str:
+    text = _normalize_text(crop_name)
+    if not text:
+        return ""
+
+    for alias in sorted(CROP_ALIASES, key=len, reverse=True):
+        if alias in text:
+            return CROP_ALIASES[alias]
+
+    for key in sorted(CROP_QUERY_MAP, key=len, reverse=True):
+        if key in text:
+            return key
+    return ""
+
+
+def _resolve_uploaded_image(product: dict) -> str:
+    raw_image = str(product.get("image_url") or product.get("image_path") or "").strip()
+    if not raw_image:
+        return ""
+    if raw_image.startswith("uploads/"):
+        return f"/farmer/static/{raw_image}"
+    if raw_image.startswith("/uploads/"):
+        return f"/farmer/static/{raw_image.lstrip('/')}"
+    if raw_image.startswith("/farmer/static/"):
+        return raw_image
+    if raw_image.startswith(("http://", "https://")):
+        return raw_image
+    if raw_image.startswith("/"):
+        return raw_image
+    return f"/{raw_image.lstrip('/')}"
+
+
+def suggest_crop_image_url(crop_name: Any, category: str) -> str:
+    canonical = _canonical_crop(crop_name)
+    if canonical and CROP_QUERY_MAP.get(canonical):
+        return _make_unsplash_url(CROP_QUERY_MAP[canonical])
+    normalized_category = normalize_category(category or "")
+    return CATEGORY_IMAGE_FALLBACKS.get(normalized_category, DEFAULT_PRODUCT_IMAGE)
 
 
 def infer_category_from_product(product: dict) -> str:
@@ -38,6 +213,12 @@ def infer_category_from_product(product: dict) -> str:
         return "fruit"
     if any(token in text for token in ("wheat", "rice", "maize", "grain", "millet", "barley", "bajra", "jowar")):
         return "grain"
+    if any(token in text for token in ("lentil", "dal", "chickpea", "chana", "moong", "urad", "rajma", "pulse", "soybean")):
+        return "pulse"
+    if any(token in text for token in ("turmeric", "chilli", "chili", "coriander", "cumin", "pepper", "cardamom", "mustard", "fenugreek", "spice")):
+        return "spice"
+    if any(token in text for token in ("cotton", "sugarcane", "groundnut", "sunflower", "jute", "cash crop")):
+        return "cash_crop"
     if any(
         token in text
         for token in (
@@ -73,7 +254,7 @@ def get_collections():
 
 
 def normalize_category(category: str) -> str:
-    value = str(category or "").strip().lower()
+    value = _normalize_text(category)
     return CATEGORY_ALIASES.get(value, value)
 
 
@@ -120,8 +301,11 @@ def normalize_product(product):
             "rating": out.get("rating", 4.8),
         }
 
-    image = out.get("image_url") or out.get("image_path")
-    out["image_url"] = image if image else DEFAULT_PRODUCT_IMAGE
+    out["image_url"] = _resolve_uploaded_image(out)
+    out["suggested_image_url"] = suggest_crop_image_url(
+        out.get("crop_name") or out.get("name"),
+        out["category"],
+    )
     out["isOrganic"] = bool(out.get("isOrganic", True))
     out["isFresh"] = bool(out.get("isFresh", True))
     out["price"] = out.get("price", out.get("base_price", 0))

@@ -1,8 +1,12 @@
-from flask import Blueprint, current_app, jsonify, request
+import datetime
+
+from flask import Blueprint, current_app, jsonify, request, session
 
 from app.repositories.market_intelligence_repository import MarketIntelligenceRepository
+from app.extensions import csrf
 from app.services.exceptions import ServiceError
 from app.services.market_intelligence_service import MarketIntelligenceService
+from app.services.weather_suggestion_service import generate_weather_crop_suggestions
 from app.services.weather_client import WeatherClient
 from app.utils.request_auth import extract_user_identity
 
@@ -56,3 +60,66 @@ def read_notification_api(notification_id):
         return jsonify({"item": updated})
     except ServiceError as error:
         return _handle_error(error)
+
+
+def _extract_weather_payload(data):
+    def _as_float(value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _as_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    return {
+        "temperature_c": _as_float((data or {}).get("temperature_c")),
+        "condition": str((data or {}).get("condition") or "").strip(),
+        "humidity": _as_int((data or {}).get("humidity")),
+        "wind_speed": _as_float((data or {}).get("wind_speed")),
+        "precipitation": _as_float((data or {}).get("precipitation")) or 0.0,
+        "soil_type": str((data or {}).get("soil_type") or "loamy").strip() or "loamy",
+        "location": str((data or {}).get("location") or "Gujarat").strip() or "Gujarat",
+    }
+
+
+@farmer_bp.route("/api/weather-suggestion", methods=["POST"])
+@csrf.exempt
+def weather_crop_suggestion():
+    """Accept weather + soil input and return crop suggestions for farmer dashboard."""
+    if not session.get("farmer_id"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    payload = _extract_weather_payload(request.get_json(silent=True) or {})
+    month = datetime.datetime.now(datetime.timezone.utc).month
+
+    suggestions = generate_weather_crop_suggestions(
+        temperature_c=payload["temperature_c"],
+        condition=payload["condition"],
+        humidity=payload["humidity"],
+        wind_speed=payload["wind_speed"],
+        precipitation=payload["precipitation"],
+        soil_type=payload["soil_type"],
+        location=payload["location"],
+        month=month,
+    )
+
+    return jsonify(
+        {
+            "success": True,
+            "suggestions": suggestions,
+            "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+    )
+
+
+@farmer_bp.route("/api/ai-crop-suggestion", methods=["POST"])
+@csrf.exempt
+def ai_crop_suggestion():
+    """Alias endpoint for UI clients that call ai-crop-suggestion directly."""
+    return weather_crop_suggestion()
+
+

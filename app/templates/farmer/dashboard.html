@@ -101,10 +101,12 @@
           {% if p.image_path %}
             <img src="{{ url_for('farmer_portal.static', filename=p.image_path) }}" alt="{{ p.crop_name }}" loading="lazy" />
           {% else %}
-            <div class="product-img-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22V12M12 12C12 12 8 10 8 6a4 4 0 0 1 8 0c0 4-4 6-4 6z"/><path d="M8 16c-2 1-4 2-4 4"/><path d="M16 16c2 1 4 2 4 4"/></svg>
-              <span>No photo</span>
-            </div>
+            <img
+              src="https://source.unsplash.com/400x300/?{{ (p.crop_name or 'farm produce')|urlencode }},farm,fresh"
+              alt="{{ p.crop_name }}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='/buyer/images/placeholders/farm-default.jpg';"
+            />
           {% endif %}
           <!-- Badges -->
           <div class="product-card-badges">

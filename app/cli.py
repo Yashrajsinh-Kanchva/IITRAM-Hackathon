@@ -139,7 +139,10 @@ def _build_demo_products(count, farmers):
                 "price": random.randint(500, 7000),
                 "stock_qty": random.randint(20, 600),
                 "unit": random.choice(["kg", "quintal", "crate"]),
-                "image_url": f"https://example.com/images/{item_name.lower().replace(' ', '-')}-{i}.jpg",
+                "image_url": (
+                    f"https://source.unsplash.com/800x600/?"
+                    f"{item_name.lower().replace(' ', '+')},farm,produce"
+                ),
                 "seller_verified": random.choice([True, True, False]),
                 "status": status,
                 "seller_name": farmer.get("name") if farmer else None,

@@ -1,4 +1,5 @@
 import re
+from statistics import median
 from pathlib import Path
 
 from bson import ObjectId
@@ -86,6 +87,10 @@ def _to_object_id(value):
         return ObjectId(str(value))
     except Exception:
         return None
+
+
+def _normalize_crop_text(value):
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9\s]", " ", str(value or "").lower())).strip()
 
 
 @farmer_portal_bp.get("")
@@ -255,7 +260,7 @@ def new_dashboard():
         offers.append(row)
 
     return render_template(
-        "farmer/farmer_dashboard.html",
+        "farmer/new_dashboard.html",
         farmer_name=session.get("farmer_name", "Farmer"),
         offers=offers,
     )
@@ -314,6 +319,104 @@ def add_product():
     if not _get_farmer():
         return redirect(url_for("farmer_portal.profile_setup"))
     return render_template("farmer/add_product.html", farmer=_get_farmer())
+
+
+@farmer_portal_bp.get("/api/market-price")
+def market_price_hint():
+    if not session.get("farmer_id"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    crop_name = str(request.args.get("crop_name") or "").strip()
+    if len(crop_name) < 2:
+        return jsonify({"success": False, "error": "Enter a crop name"}), 400
+
+    products_col = _collections()["products"]
+    normalized_crop = _normalize_crop_text(crop_name)
+    tokens = [part for part in normalized_crop.split(" ") if len(part) > 1]
+    regex_chunks = [re.escape(part) for part in tokens][:3] or [re.escape(normalized_crop)]
+    regex_pattern = "|".join(regex_chunks)
+
+    base_filter = {
+        "price_type": "fixed",
+        "price": {"$gt": 0},
+        "$or": [
+            {"crop_name": {"$regex": regex_pattern, "$options": "i"}},
+            {"name": {"$regex": regex_pattern, "$options": "i"}},
+        ],
+    }
+
+    rows = list(
+        products_col
+        .find(base_filter, {"price": 1, "quantity_unit": 1, "updated_at": 1})
+        .sort("updated_at", -1)
+        .limit(80)
+    )
+
+    prices = []
+    units = []
+    for row in rows:
+        try:
+            value = float(row.get("price") or 0)
+        except (TypeError, ValueError):
+            continue
+        if value <= 0:
+            continue
+        prices.append(value)
+        units.append(str(row.get("quantity_unit") or "kg").strip() or "kg")
+
+    source = "crop_listings"
+    category = _crop_category(crop_name)
+    if not prices:
+        source = "category_listings"
+        fallback_rows = list(
+            products_col
+            .find(
+                {"category": category, "price_type": "fixed", "price": {"$gt": 0}},
+                {"price": 1, "quantity_unit": 1, "updated_at": 1},
+            )
+            .sort("updated_at", -1)
+            .limit(80)
+        )
+        for row in fallback_rows:
+            try:
+                value = float(row.get("price") or 0)
+            except (TypeError, ValueError):
+                continue
+            if value <= 0:
+                continue
+            prices.append(value)
+            units.append(str(row.get("quantity_unit") or "kg").strip() or "kg")
+
+    if not prices:
+        return jsonify(
+            {
+                "success": True,
+                "crop_name": crop_name,
+                "has_data": False,
+                "message": "No recent market data found for this crop yet.",
+            }
+        )
+
+    unit_hint = max(set(units), key=units.count) if units else "kg"
+    min_price = min(prices)
+    max_price = max(prices)
+    suggested = float(median(prices))
+
+    return jsonify(
+        {
+            "success": True,
+            "has_data": True,
+            "crop_name": crop_name,
+            "category": category,
+            "source": source,
+            "sample_size": len(prices),
+            "unit_hint": unit_hint,
+            "suggested_price": round(suggested, 2),
+            "min_price": round(min_price, 2),
+            "max_price": round(max_price, 2),
+            "message": "Based on recent listings in the marketplace.",
+        }
+    )
 
 
 @farmer_portal_bp.post("/add-product")

@@ -54,7 +54,11 @@ def add_to_cart():
         "name": normalized["name"],
         "price": final_price,
         "quantity": quantity,
-        "image": normalized.get("image_url") or DEFAULT_PRODUCT_IMAGE,
+        "image": (
+            normalized.get("image_url")
+            or normalized.get("suggested_image_url")
+            or DEFAULT_PRODUCT_IMAGE
+        ),
         "neg_id": str(neg_id) if neg_id else None,
     }
 

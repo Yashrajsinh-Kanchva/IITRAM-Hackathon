@@ -4,27 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Details | Krishi Connect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
 
-    <header>
-        <div class="nav-container">
-            <a href="index.html" class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1.85 5.5a7.03 7.03 0 0 1-13.3 3.65"/><path d="M14 15.5c.24.51.5 1.05.75 1.5"/><path d="M12 18s1.5 1.5 3 0"/></svg>
-                <span>Krishi Connect</span>
-            </a>
-            <nav class="nav-links">
-                <a href="index.html">Marketplace</a>
-                <a href="map.html">Map</a>
-                <a href="wishlist.html">Wishlist</a>
-                <a href="orders.html">My Orders</a>
-                <a href="negotiations.html">My Negotiations</a>
-                <span id="auth-link"><a href="login.html">Sign In</a></span>
-                <a href="cart.html" class="cart-icon">🛒 Cart <span class="cart-badge" id="cart-badge">0</span></a>
-            </nav>
-        </div>
-    </header>
+    <header></header>
 
     <main class="container">
         
@@ -124,7 +114,8 @@
 
     <div id="toast-container" class="toast-container"></div>
     <script src="js/imageMapper.js?v=20260328f"></script>
-    <script src="js/app.js?v=20260328f"></script>
+    <script src="js/navbar.js?v=20260328g"></script>
+    <script src="js/app.js?v=20260328g"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             renderProductDetail();
