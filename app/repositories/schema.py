@@ -255,6 +255,148 @@ COLLECTION_SCHEMAS = {
             },
         }
     },
+    "farmers": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": [
+                "farmer_id",
+                "name",
+                "location",
+                "crop_types",
+                "payment",
+                "profile_complete",
+                "created_at",
+                "updated_at",
+            ],
+            "properties": {
+                "farmer_id": {"bsonType": "string"},
+                "name": {"bsonType": "string"},
+                "location": {
+                    "bsonType": "object",
+                    "required": ["village", "city", "state", "pincode"],
+                    "properties": {
+                        "village": {"bsonType": "string"},
+                        "city": {"bsonType": "string"},
+                        "state": {"bsonType": "string"},
+                        "pincode": {"bsonType": "string"},
+                    },
+                },
+                "crop_types": {
+                    "bsonType": "array",
+                    "items": {"bsonType": "string"},
+                },
+                "farm_size": {
+                    "bsonType": ["object", "null"],
+                },
+                "payment": {
+                    "bsonType": "object",
+                    "required": ["bank_acc_holder", "bank_acc_number", "bank_ifsc"],
+                    "properties": {
+                        "bank_acc_holder": {"bsonType": "string"},
+                        "bank_acc_number": {"bsonType": "string"},
+                        "bank_ifsc": {"bsonType": "string"},
+                        "bank_name": {"bsonType": ["string", "null"]},
+                        "upi_id": {"bsonType": ["string", "null"]},
+                    },
+                },
+                "profile_complete": {"bsonType": "bool"},
+                "created_at": {"bsonType": "date"},
+                "updated_at": {"bsonType": "date"},
+            },
+        }
+    },
+    "buyer_Cart": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["user_id", "items"],
+            "properties": {
+                "user_id": {"bsonType": "string"},
+                "items": {
+                    "bsonType": "array",
+                    "items": {
+                        "bsonType": "object",
+                        "required": ["product_id", "name", "price", "quantity"],
+                        "properties": {
+                            "product_id": {"bsonType": "string"},
+                            "name": {"bsonType": "string"},
+                            "price": {"bsonType": ["double", "int", "long", "decimal"]},
+                            "quantity": {"bsonType": ["int", "long"]},
+                            "image": {"bsonType": ["string", "null"]},
+                            "neg_id": {"bsonType": ["string", "null"]},
+                        },
+                    },
+                },
+            },
+        }
+    },
+    "buyer_Orders": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": [
+                "user_id",
+                "items",
+                "total_price",
+                "address",
+                "payment_method",
+                "status",
+                "created_at",
+                "updated_at",
+            ],
+            "properties": {
+                "user_id": {"bsonType": "string"},
+                "items": {"bsonType": "array"},
+                "total_price": {"bsonType": ["double", "int", "long", "decimal"]},
+                "address": {"bsonType": "string"},
+                "payment_method": {"bsonType": "string"},
+                "status": {"bsonType": "string"},
+                "created_at": {"bsonType": "date"},
+                "updated_at": {"bsonType": "date"},
+            },
+        }
+    },
+    "buyer_Negotiations": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": [
+                "user_id",
+                "product_id",
+                "product_name",
+                "original_price",
+                "negotiated_price",
+                "message",
+                "status",
+                "created_at",
+                "updated_at",
+            ],
+            "properties": {
+                "user_id": {"bsonType": "string"},
+                "user_name": {"bsonType": ["string", "null"]},
+                "product_id": {"bsonType": "string"},
+                "product_name": {"bsonType": "string"},
+                "original_price": {"bsonType": ["double", "int", "long", "decimal"]},
+                "negotiated_price": {"bsonType": ["double", "int", "long", "decimal"]},
+                "message": {"bsonType": ["string", "null"]},
+                "status": {"bsonType": "string"},
+                "counter_price": {"bsonType": ["double", "int", "long", "decimal", "null"]},
+                "counter_message": {"bsonType": ["string", "null"]},
+                "created_at": {"bsonType": "date"},
+                "updated_at": {"bsonType": "date"},
+            },
+        }
+    },
+    "buyer_Wishlist": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["user_id", "product_ids"],
+            "properties": {
+                "user_id": {"bsonType": "string"},
+                "product_ids": {
+                    "bsonType": "array",
+                    "items": {"bsonType": "string"},
+                },
+            },
+        }
+    },
 }
 
 

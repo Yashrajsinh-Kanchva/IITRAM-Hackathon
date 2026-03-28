@@ -38,3 +38,10 @@ def ensure_indexes(db):
     db.farmer_notifications.create_index(
         [("farmer_id", ASCENDING), ("type", ASCENDING), ("created_at", ASCENDING)]
     )
+    db.farmers.create_index([("farmer_id", ASCENDING)], unique=True)
+    db.products.create_index([("farmer_id", ASCENDING), ("is_live", ASCENDING)])
+    db["buyer_Cart"].create_index([("user_id", ASCENDING)], unique=True)
+    db["buyer_Orders"].create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+    db["buyer_Negotiations"].create_index([("user_id", ASCENDING), ("created_at", DESCENDING)])
+    db["buyer_Negotiations"].create_index([("status", ASCENDING), ("updated_at", DESCENDING)])
+    db["buyer_Wishlist"].create_index([("user_id", ASCENDING)], unique=True)

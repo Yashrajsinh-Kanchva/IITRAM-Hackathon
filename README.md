@@ -1,11 +1,14 @@
-# Farm-to-Market Marketplace (Admin MVP)
+# Farm-to-Market Marketplace (Admin + Buyer + Farmer)
 
-Admin-only MVP for a Farm-to-Market web platform using:
-- `Flask` backend (app factory + admin blueprint)
+Integrated Farm-to-Market platform using:
+- `Flask` backend (app factory + blueprints)
 - `MongoDB` database
 - `HTML + Tailwind CSS + Vanilla JS` frontend
 
-This build focuses only on the Admin view and provides secure login, data monitoring, moderation workflows, transaction supervision, and analytics.
+This build now contains all modules on the same database (`farm_to_market`):
+- Admin panel (moderation, monitoring, analytics, AI insights)
+- Buyer module (signup/login, marketplace, cart, negotiations, wishlist, orders)
+- Farmer portal (profile setup, product listing, negotiation handling, dashboard)
 
 ## Features (Admin)
 - Admin authentication (single super admin)
@@ -17,33 +20,54 @@ This build focuses only on the Admin view and provides secure login, data monito
 - Analytics graphs (sales trend, order trend, user growth, category activity)
 - Audit trail for sensitive admin actions
 
+## Features (Buyer)
+- Buyer signup/login APIs
+- Buyer storefront pages (marketplace, cart, orders, wishlist, profile, map)
+- Negotiation flow (submit/update/reject)
+- Cart management and checkout/order placement
+- Buyer order placement mirrors into core `orders` and `transactions` for admin visibility
+
+## Features (Farmer)
+- Farmer role selection + entry flow
+- Farmer profile setup (location, crop types, payment details)
+- Farmer product listing and live/pause/delete controls
+- Farmer negotiation actions (accept/reject/counter) over buyer offers
+- Farmer dashboard and advanced dashboard views
+
 ## Tech Stack
 - Backend: `Flask`, `Flask-WTF`, `PyMongo`
 - Database: `MongoDB`
-- Frontend: `Jinja templates`, `Vanilla JS`, `Tailwind`
+- Frontend: Admin templates + Buyer static pages + Farmer templates/assets
 - Tests: `pytest`, `mongomock`
 
 ## Project Structure
 ```text
 app/
   admin/
-    decorators.py
-    dependencies.py
-    forms.py
-    routes.py
+  buyer/
+    auth_routes.py
+    products_routes.py
+    cart_routes.py
+    orders_routes.py
+    negotiation_routes.py
+    wishlist_routes.py
+    web_routes.py
+  farmer/
+    portal_routes.py
   repositories/
   services/
   static/
-    css/
-    js/
+    farmer/
   templates/
     admin/
+    farmer/
+    login_selector.html
   utils/
   __init__.py
+frontend/
+  buyer/
 run.py
 requirements.txt
-tailwind.config.js
-package.json
 tests/
   integration/
   unit/
@@ -61,69 +85,43 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 ```
-Edit `.env` if needed.
-Use your Atlas connection string as:
+Set:
 ```bash
 MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>/?retryWrites=true&w=majority
 DATABASE_NAME=farm_to_market
 ```
 
-### 3) Create admin user
+### 3) Initialize DB and seed admin
 ```bash
 flask --app run.py init-db
 flask --app run.py seed-admin --email admin@example.com
 ```
-You will be prompted for password.
 
-### 4) (Optional) Seed realistic demo data for dashboards/charts
+### 4) Optional demo data
 ```bash
 flask --app run.py seed-demo-data --reset
-```
-You can customize volume:
-```bash
-flask --app run.py seed-demo-data --reset --users 120 --products 200 --orders 400 --activity-logs 200
 ```
 
 ### 5) Run app
 ```bash
 flask --app run.py run
 ```
-Open `http://127.0.0.1:5000/admin/login`.
+Open:
+- Role selector: `http://127.0.0.1:5000/login`
+- Admin login: `http://127.0.0.1:5000/admin/login`
+- Buyer login: `http://127.0.0.1:5000/buyer/login.html`
+- Farmer portal: `http://127.0.0.1:5000/farmer`
 
-## Tailwind Setup
-This project includes Tailwind CLI config.
-
-Install frontend dependencies:
-```bash
-npm install
-```
-
-Build CSS:
-```bash
-npm run build:css
-```
-
-Watch mode:
-```bash
-npm run watch:css
-```
-
-## Admin Routes
-### Pages
-- `/admin/login`
-- `/admin/dashboard`
-- `/admin/users`
-- `/admin/products`
-- `/admin/orders`
-- `/admin/transactions`
-- `/admin/analytics`
-
-### APIs
+## API Surface
+### Admin APIs
 - `GET /admin/api/dashboard/kpis`
 - `GET /admin/api/users`
 - `PATCH /admin/api/users/<id>/status`
+- `POST /admin/api/users/bulk-action`
 - `GET /admin/api/products`
+- `GET /admin/api/products/quality-summary`
 - `PATCH /admin/api/products/<id>/review`
+- `POST /admin/api/products/bulk-action`
 - `GET /admin/api/orders`
 - `PATCH /admin/api/orders/<id>/status`
 - `GET /admin/api/transactions`
@@ -131,31 +129,55 @@ npm run watch:css
 - `GET /admin/api/analytics/sales?range=7d|30d|90d`
 - `GET /admin/api/analytics/orders?range=7d|30d|90d`
 - `GET /admin/api/analytics/overview?range=7d|30d|90d`
+- `GET /admin/api/analytics/forecast?horizon=1d|3d|7d`
+- `GET /admin/api/analytics/crop-trends?horizon=1d|3d|7d`
+- `POST /admin/api/analytics/refresh`
+- `GET /admin/api/alerts`
+- `PATCH /admin/api/alerts/<id>/resolve`
+- `GET /admin/api/audit-logs`
 
-## Database Collections and Indexes
-Collections:
-- `admin_users`
-- `users`
-- `products`
-- `orders`
-- `transactions`
-- `admin_activity_logs`
+### Buyer APIs
+- `POST /api/signup`
+- `POST /api/login`
+- `GET /api/products`
+- `GET /api/products/<id>`
+- `GET /api/cart/<user_id>`
+- `POST /api/cart/add`
+- `POST /api/cart/remove`
+- `POST /api/cart/update`
+- `POST /api/orders/`
+- `GET /api/orders/<user_id>`
+- `POST /api/negotiate/submit`
+- `GET /api/negotiate/<user_id>`
+- `POST /api/negotiate/update/<neg_id>`
+- `POST /api/negotiate/reject/<neg_id>`
+- `GET /api/wishlist/<user_id>`
+- `POST /api/wishlist/toggle`
 
-Configured indexes:
-- `admin_users.email` (unique)
-- `users.role + users.status`
-- `products.status + products.category + products.created_at`
-- `orders.status + orders.created_at`
-- `transactions.payment_status + transactions.created_at`
+### Farmer APIs + Pages
+- `GET /farmer`
+- `GET /farmer/entry`
+- `POST /farmer/entry`
+- `GET /farmer/profile-setup`
+- `POST /farmer/profile-setup`
+- `GET /farmer/dashboard`
+- `GET /farmer/new-dashboard`
+- `GET /farmer/add-product`
+- `POST /farmer/add-product`
+- `POST /farmer/product/<product_id>/toggle`
+- `POST /farmer/product/<product_id>/delete`
+- `POST /farmer/api/negotiate`
+- `GET /api/farmer/<farmer_id>`
+- `GET /farmer/logout`
 
-Schema setup command:
-- `flask --app run.py init-db`
-- Optional (if validator permissions are restricted): `flask --app run.py init-db --skip-validators`
+## Collections
+- `admin_users`, `users`, `products`, `orders`, `transactions`
+- `offers`, `admin_activity_logs`, `admin_alerts`
+- `ml_order_forecasts`, `ml_crop_trends`, `farmer_notifications`
+- `farmers`
+- `buyer_Cart`, `buyer_Orders`, `buyer_Negotiations`, `buyer_Wishlist`
 
 ## Testing
-Run full suite:
 ```bash
 pytest -q
 ```
-
-Current status: `15 passed`.

@@ -1,0 +1,164 @@
+{% extends "farmer/base.html" %}
+{% block title %}Add Product | KrishiConnect{% endblock %}
+{% block description %}List your crop for sale — set price, quantity, harvest date and go live instantly.{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('farmer_portal.static', filename='css/product.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="form-page-wrapper">
+
+  <!-- Header -->
+  <div class="page-header" style="margin-bottom:2rem">
+    <div class="page-header-text">
+      <p style="font-size:.8rem;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">New Listing</p>
+      <h1 style="font-family:'Playfair Display',serif;font-size:1.85rem;font-weight:700;color:var(--dark)">List Your Crop</h1>
+      <p style="color:var(--mid);font-size:.88rem;margin-top:.25rem">Fill in the details — your product goes <strong style="color:var(--primary)">live</strong> instantly in the marketplace</p>
+    </div>
+    <a href="/farmer/dashboard" class="btn-ghost-nav">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+  </div>
+
+  <!-- Form Card -->
+  <div class="form-card product-form-card">
+
+    <!-- Image Upload -->
+    <div class="image-upload-zone" id="imageUploadZone">
+      <div class="upload-placeholder" id="uploadPlaceholder">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="upload-text">
+          <strong>Upload a photo of your crop</strong>
+          <span>JPG, PNG, WEBP · Optional but highly recommended</span>
+        </div>
+        <button type="button" class="btn-upload-trigger" onclick="document.getElementById('imageInput').click()">Browse Photo</button>
+      </div>
+      <img id="imagePreview" class="image-preview" src="" alt="Crop preview" style="display:none" />
+      <button type="button" class="btn-remove-img" id="removeImgBtn" style="display:none" onclick="removeImage()">✕ Remove</button>
+      <input type="file" id="imageInput" accept=".jpg,.jpeg,.png,.webp" style="display:none" onchange="handleImageChange(event)" />
+    </div>
+
+    <!-- Crop Name -->
+    <div class="form-group">
+      <label for="cropName">Crop Name <span class="req">*</span></label>
+      <div class="input-box">
+        <span class="iicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 22V12M12 12C12 12 8 10 8 6a4 4 0 0 1 8 0c0 4-4 6-4 6z"/><path d="M8 16c-2 1-4 2-4 4"/><path d="M16 16c2 1 4 2 4 4"/></svg></span>
+        <input id="cropName" type="text" placeholder="e.g. Tomatoes, Wheat, Onions…" />
+      </div>
+      <span class="err" id="cropNameErr"></span>
+    </div>
+
+    <!-- Quantity -->
+    <div class="form-group">
+      <label>Quantity Available <span class="req">*</span></label>
+      <div class="input-row-inline">
+        <div class="input-box flex-grow">
+          <span class="iicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>
+          <input id="quantity" type="number" placeholder="e.g. 100" min="1" step="0.5" />
+        </div>
+        <div class="input-box unit-select-box">
+          <select id="quantityUnit">
+            <option value="kg">kg</option>
+            <option value="quintal">Quintal</option>
+            <option value="ton">Ton</option>
+            <option value="dozen">Dozen</option>
+            <option value="piece">Piece</option>
+          </select>
+        </div>
+      </div>
+      <span class="err" id="quantityErr"></span>
+    </div>
+
+    <!-- Price type -->
+    <div class="form-group">
+      <label>Pricing <span class="req">*</span></label>
+      <div class="price-toggle-group">
+        <button type="button" class="price-toggle-btn active" id="btnFixed" onclick="setPriceType('fixed')">
+          <span class="pt-icon" style="font-family:'JetBrains Mono',monospace;font-size:.9rem">₹</span> Fixed Price
+        </button>
+        <button type="button" class="price-toggle-btn" id="btnNego" onclick="setPriceType('negotiable')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          Negotiable
+        </button>
+      </div>
+      <input type="hidden" id="priceType" value="fixed" />
+      <div id="fixedPriceBox" class="input-row-inline" style="margin-top:.8rem">
+        <div class="input-box flex-grow">
+          <span class="iicon" style="font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--primary);font-weight:600">₹</span>
+          <input id="price" type="number" placeholder="Price per unit" min="0" step="0.5" />
+        </div>
+        <span class="per-unit-label">per <span id="perUnitLabel">kg</span></span>
+      </div>
+      <div id="negoBox" class="nego-banner" style="display:none;margin-top:.8rem">
+        Buyers will contact you directly to negotiate the price
+      </div>
+      <span class="err" id="priceErr"></span>
+    </div>
+
+    <!-- Harvest date -->
+    <div class="form-group">
+      <label for="harvestDate">Expected Harvest Date <span class="req">*</span></label>
+      <div class="input-box">
+        <span class="iicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        <input id="harvestDate" type="date" />
+      </div>
+      <span class="err" id="harvestDateErr"></span>
+    </div>
+
+    <!-- Min order -->
+    <div class="form-group">
+      <label>Minimum Order Quantity <span class="req">*</span></label>
+      <p class="field-hint">The smallest amount a single buyer can order from you</p>
+      <div class="input-row-inline">
+        <div class="input-box flex-grow">
+          <span class="iicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>
+          <input id="minOrderQty" type="number" placeholder="e.g. 10" min="1" step="0.5" />
+        </div>
+        <div class="input-box unit-select-box">
+          <select id="minOrderUnit">
+            <option value="kg">kg</option>
+            <option value="quintal">Quintal</option>
+            <option value="ton">Ton</option>
+            <option value="dozen">Dozen</option>
+            <option value="piece">Piece</option>
+          </select>
+        </div>
+      </div>
+      <span class="err" id="minOrderErr"></span>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-section">
+      <div class="live-info">
+        <span class="live-dot"></span>
+        Your product will go <strong style="margin:0 .2rem;color:var(--primary)">live</strong> immediately after submission
+      </div>
+      <button class="btn-go-live" id="submitBtn" onclick="submitProduct()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span id="btnText">Go Live Now</span>
+        <span id="btnLoader" style="display:none">Publishing…</span>
+      </button>
+    </div>
+
+  </div><!-- /form-card -->
+
+  <!-- Success toast -->
+  <div class="success-toast" id="successToast">
+    <div class="toast-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div>
+      <strong>Product is Live!</strong>
+      <p>Buyers can now find and order your crop</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('farmer_portal.static', filename='js/product.js') }}"></script>
+{% endblock %}

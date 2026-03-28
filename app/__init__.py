@@ -5,9 +5,11 @@ from flask import Flask, jsonify, render_template, request
 from pymongo import MongoClient
 
 from app.admin.routes import admin_bp
+from app.buyer import BUYER_BLUEPRINTS
 from app.cli import register_commands
 from app.config import CONFIG_BY_NAME
 from app.extensions import csrf
+from app.farmer.portal_routes import farmer_portal_bp, farmer_public_api_bp
 from app.farmer.routes import farmer_bp
 from app.offers.routes import offers_bp
 from app.repositories.schema import ensure_database_structure
@@ -49,10 +51,24 @@ def create_app(config_name=None, test_config=None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(offers_bp)
     app.register_blueprint(farmer_bp)
+    app.register_blueprint(farmer_portal_bp)
+    app.register_blueprint(farmer_public_api_bp)
+    csrf.exempt(farmer_portal_bp)
+    for blueprint, prefix in BUYER_BLUEPRINTS:
+        if prefix:
+            app.register_blueprint(blueprint, url_prefix=prefix)
+        else:
+            app.register_blueprint(blueprint)
+        if prefix and prefix.startswith("/api"):
+            csrf.exempt(blueprint)
 
     @app.get("/")
     def healthcheck():
         return jsonify({"status": "ok", "service": "farm-to-market-admin"})
+
+    @app.get("/login")
+    def unified_login():
+        return render_template("login_selector.html")
 
     @app.errorhandler(400)
     @app.errorhandler(404)
@@ -62,6 +78,7 @@ def create_app(config_name=None, test_config=None):
     def handle_http_errors(error):
         wants_json = (
             request.path.startswith("/admin/api")
+            or request.path.startswith("/api")
             or request.path.startswith("/offers")
             or request.path.startswith("/farmer/api")
             or request.accept_mimetypes.best == "application/json"

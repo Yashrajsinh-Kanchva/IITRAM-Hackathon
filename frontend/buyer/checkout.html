@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | FarmLink</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="background: var(--neutral-light)">
+
+    <header>
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1.85 5.5a7.03 7.03 0 0 1-13.3 3.65"/><path d="M14 15.5c.24.51.5 1.05.75 1.5"/><path d="M12 18s1.5 1.5 3 0"/></svg>
+                <span>FarmLink</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html">Marketplace</a>
+                <a href="map.html">Map</a>
+                <a href="wishlist.html">Wishlist</a>
+                <a href="orders.html">My Orders</a>
+                <a href="negotiations.html">My Negotiations</a>
+                <span id="auth-link"><a href="login.html">Sign In</a></span>
+                <a href="cart.html" class="cart-icon">🛒 Cart <span class="cart-badge" id="cart-badge">0</span></a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <div class="cart-layout" style="grid-template-columns: 1fr 400px;">
+            <!-- Left: Form -->
+            <div class="cart-summary" style="width:100%; position:static; box-shadow:none">
+                <h2 class="display-font" style="margin-bottom:2rem">Shipping Information</h2>
+                <form id="order-form" onsubmit="handlePlaceOrder(event)">
+                    <div class="form-group">
+                        <label>Delivery Address</label>
+                        <textarea id="address" class="input-field" placeholder="Full street address, suburb, state, pincode" rows="4" required></textarea>
+                    </div>
+
+                    <h2 class="display-font" style="margin-top:3rem; margin-bottom:2rem">Payment Method</h2>
+                    <div style="display:flex; flex-direction:column; gap:1.25rem">
+                        <label class="product-card" style="padding:1.5rem; display:flex; align-items:center; gap:1.5rem; cursor:pointer">
+                            <input type="radio" name="payment" value="COD" checked>
+                            <div>
+                                <h4 style="color:var(--primary)">Cash on Delivery (COD)</h4>
+                                <p style="font-size:12px; color:var(--neutral-mid)">Pay the farmer when they deliver to your doorstep.</p>
+                            </div>
+                        </label>
+                        <label class="product-card" style="padding:1.5rem; display:flex; align-items:center; gap:1.5rem; cursor:pointer">
+                            <input type="radio" name="payment" value="UPI">
+                            <div>
+                                <h4 style="color:var(--primary)">UPI (PhonePe / GPay)</h4>
+                                <p style="font-size:12px; color:var(--neutral-mid)">Pay instantly using any UPI app.</p>
+                            </div>
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Final Summary -->
+            <div class="cart-summary" style="box-shadow: var(--shadow)">
+                <h3 style="margin-bottom:1.5rem">Order Total</h3>
+                <div id="checkout-summary">
+                    <div style="display:flex; justify-content:space-between; font-size:1.5rem; font-weight:700; color:var(--primary); margin-bottom:2rem">
+                        <span>Grand Total</span>
+                        <span id="order-total">₹0.00</span>
+                    </div>
+                </div>
+                <button type="submit" form="order-form" class="btn-auth" style="padding:1rem">Place Order Now</button>
+                <p style="font-size:11px; text-align:center; color:var(--neutral-mid); margin-top:1.5rem">
+                    🔒 Secure checkout powered by FarmLink Escrow.
+                </p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- UPI QR Modal -->
+    <div id="upi-modal" class="drawer-overlay" style="display:none; justify-content:center; align-items:center; background:rgba(0,0,0,0.8); z-index:2000">
+        <div class="auth-container" style="text-align:center; position:relative; max-width:350px">
+            <h2 class="display-font" style="margin-bottom:1rem">Final Step</h2>
+            <div style="font-size:1.5rem; font-weight:700; color:var(--primary); margin-bottom:1.5rem">
+                Pay Amount: <span id="upi-amount">₹0.00</span>
+            </div>
+            <div style="background:white; padding:1.5rem; border-radius:12px; margin-bottom:1.5rem; display:flex; justify-content:center; box-shadow:0 4px 20px rgba(0,0,0,0.1)">
+                <!-- Simple SVG QR Placeholder -->
+                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.5">
+                    <rect x="2" y="2" width="6" height="6"/><rect x="16" y="2" width="6" height="6"/><rect x="2" y="16" width="6" height="6"/>
+                    <path d="M10 2h4M10 6h4M2 10v4M6 10v4M10 10h4v4h-4zM16 10h6M16 14h6M10 16h4M10 20h4M16 16v6M20 16v6"/>
+                </svg>
+            </div>
+            <p style="font-size:14px; color:var(--neutral-mid); margin-bottom:1.5rem">Please scan to pay. Click only after payment is done.</p>
+            <button class="btn-auth" onclick="finalizeOrder()">I have Paid the Amount</button>
+            <button class="filter-chip" style="width:100%; margin-top:10px" onclick="document.getElementById('upi-modal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem("user"));
+            if (!user) window.location.href = "login.html";
+            renderCartPage();
+        });
+    </script>
+</body>
+</html>
